@@ -123,7 +123,7 @@ if not os.path.isdir(history_dir):
 DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
 
 # Hyper-parameters
-EPOCHS = 10
+EPOCHS = 1
 LOSS = torch.nn.CrossEntropyLoss()
 
 # Active Learning parameters
