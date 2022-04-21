@@ -28,7 +28,7 @@ def get_images(data_split, img_class, attack_type=None, data_path='data/ROSE_DB/
     # If img_class is 0, we return all the images there
     if img_class == 0:
         images = [i for i in os.listdir(img_class_dir) if not i.startswith('.')]
-    
+
     else:
         # Assess the type of attack
         if attack_type is not None:
@@ -38,7 +38,7 @@ def get_images(data_split, img_class, attack_type=None, data_path='data/ROSE_DB/
             images = [i for i in os.listdir(img_class_dir) if not i.startswith('.')]
             images = [i for i in images if int(i.split('_')[2])==int(attack_type)]
 
-        
+
         else:
             images = [i for i in os.listdir(img_class_dir) if not i.startswith('.')]
 
