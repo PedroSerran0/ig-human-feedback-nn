@@ -1,6 +1,5 @@
 # Imports
 import os
-from typing_extensions import assert_type
 import _pickle as CPickle
 import numpy as np
 
@@ -8,7 +7,7 @@ import numpy as np
 
 # ROSE Database
 # Function: Get images of a specific split and class
-def get_images(data_split, img_class, attack_type, data_path='data/ROSE_DB/data_divided'):
+def get_images(data_split, img_class, attack_type=None, data_path='data/ROSE_DB/data_divided'):
 
     # Assert conditions
     # Data split
@@ -23,7 +22,7 @@ def get_images(data_split, img_class, attack_type, data_path='data/ROSE_DB/data_
     data_split_dir = os.path.join(data_path, data_split)
 
     # Enter img_class directory
-    img_class_dir = os.path.join(data_split_dir, img_class)
+    img_class_dir = os.path.join(data_split_dir, str(img_class))
 
 
     # If img_class is 0, we return all the images there
@@ -31,13 +30,26 @@ def get_images(data_split, img_class, attack_type, data_path='data/ROSE_DB/data_
         images = [i for i in os.listdir(img_class_dir) if not i.startswith('.')]
     
     else:
-        # TODO: Review
-        if attack_type not None:
+        # Assess the type of attack
+        if attack_type is not None:
             assert attack_type in [i for i in range(1, 8)], f"Attack type should be an integer between 1-7. You entered {attack_type}."
-            # TODO: Add this
+            
+            # Get the images
+            images = [i for i in os.listdir(img_class_dir) if not i.startswith('.')]
+            images = [i for i in images if int(i.split('_')[2])==int(attack_type)]
+
         
         else:
             images = [i for i in os.listdir(img_class_dir) if not i.startswith('.')]
 
 
     return images
+
+
+
+# Run this script to test these functions
+if __name__ == '__main__':
+    # a = get_images(data_split='test', img_class=1)
+    # print(a)
+
+    print("Finished.")
