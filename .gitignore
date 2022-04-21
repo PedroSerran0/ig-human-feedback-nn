@@ -133,3 +133,10 @@ data/
 *.png
 *.npy
 *.txt
+
+# macOS files
+*.DS_Store
+
+# SLURM files
+*.err
+*.out
