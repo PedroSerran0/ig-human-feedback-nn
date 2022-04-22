@@ -44,8 +44,10 @@ def attribute_image_features(algorithm, input, labels, ind, **kwargs):
 
 def GenerateDeepLift(image, model, data_classes, label):
     model.eval()
+
     # Get image classification
     model.to('cpu')
+    # Add empty batch dimension (to allow the function to take in a single sample)
     image_batch = image[None]
     image_batch = image_batch.type('torch.FloatTensor') 
     outputs = model(image_batch)
@@ -54,6 +56,7 @@ def GenerateDeepLift(image, model, data_classes, label):
 
     input = image.unsqueeze(0)
     input.requires_grad = True
+    
     # Generate the visual explnations (saliency maps)
     # DeepLift
     deeplift = DeepLift(model)
