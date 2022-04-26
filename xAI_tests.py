@@ -27,11 +27,9 @@ from captum.attr import visualization as viz
 # My Imports
 from CustomDatasets import Aptos19_Dataset
 from ModelArchitectures import PretrainedModel
-from xAI_utils import GenerateBatchExplanation
-from xAI_utils import GenerateGradCamBatch
-from xAI_utils import GenerateBatchDeepLift
 from xAI_utils import GenerateDeepLift
 from xAI_utils import DeepLiftRects
+from xAI_utils import GenerateDeepLiftSingle
 
 # CUDA
 GPU_TO_USE="0"
@@ -136,5 +134,24 @@ images, labels = dataiter.next()
 #     dataiter = iter(val_loader)
 #     GenerateBatchDeepLift(data_batch_iteration=dataiter, batch_it_size=10,model = model, data_classes=classes, save_file_dir=x_image_dir)
 
+
+def fig2img(fig):
+    """Convert a Matplotlib figure to a PIL Image and return it"""
+    import io
+    buf = io.BytesIO()
+    fig.savefig(buf)
+    buf.seek(0)
+    img = Image.open(buf)
+    return img
+
 #fig = GenerateDeepLift(image = images[0], label=labels[0], data_classes=classes, model = model)
-selectedRects = DeepLiftRects(image = images[0], label=labels[0], data_classes=classes, model = model)
+fig,att = GenerateDeepLiftSingle(image = images[0], label=labels[0], data_classes=classes, model = model)
+
+deepLiftFig = fig2img(fig)
+convertTensor = transforms.ToTensor()
+deepLiftFig = convertTensor(deepLiftFig)
+print(deepLiftFig.shape)
+print(att.shape)
+
+print(deepLiftFig[0].shape)
+plt.imshow(att)
