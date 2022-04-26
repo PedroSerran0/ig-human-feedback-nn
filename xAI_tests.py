@@ -31,6 +31,7 @@ from xAI_utils import GenerateBatchExplanation
 from xAI_utils import GenerateGradCamBatch
 from xAI_utils import GenerateBatchDeepLift
 from xAI_utils import GenerateDeepLift
+from xAI_utils import DeepLiftRects
 
 # CUDA
 GPU_TO_USE="0"
@@ -135,4 +136,5 @@ images, labels = dataiter.next()
 #     dataiter = iter(val_loader)
 #     GenerateBatchDeepLift(data_batch_iteration=dataiter, batch_it_size=10,model = model, data_classes=classes, save_file_dir=x_image_dir)
 
-fig = GenerateDeepLift(image = images[0], label=labels[0], data_classes=classes, model = model)
+#fig = GenerateDeepLift(image = images[0], label=labels[0], data_classes=classes, model = model)
+selectedRects = DeepLiftRects(image = images[0], label=labels[0], data_classes=classes, model = model)

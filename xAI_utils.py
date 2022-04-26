@@ -28,6 +28,7 @@ from captum.attr import LayerAttribution
 # My Imports
 from CustomDatasets import Aptos19_Dataset
 from ModelArchitectures import PretrainedModel
+from choose_rects import ChooseRectangles
 
 # Plt show function
 def imshow(img ,transpose = True):
@@ -41,6 +42,25 @@ def attribute_image_features(algorithm, input, labels, ind, **kwargs):
     tensor_attributions = algorithm.attribute(input, target=labels[ind], **kwargs)
     
     return tensor_attributions
+
+def DeepLiftRects(image, model, data_classes, label):
+
+    deepLiftFig, deepAtt = GenerateDeepLift(image, model, data_classes, label)
+
+    print(deepLiftFig.shape)
+    print(deepAtt.shape)
+
+    ui = ChooseRectangles(deepAtt, [
+        (200, 150, 100, 50),
+        (0, 100, 200, 150),
+        (100, 100, 200, 200),
+    ])
+    ui.draw()
+    plt.show()
+    print(ui.selected)
+
+    return ui.selected
+
 
 def GenerateDeepLift(image, model, data_classes, label):
     model.eval()
@@ -65,7 +85,10 @@ def GenerateDeepLift(image, model, data_classes, label):
     model.zero_grad()
     input = input.type('torch.FloatTensor') 
     dl_att = deeplift.attribute(input, target=label.item())
+    print(dl_att)
     dl_att = np.transpose(dl_att.squeeze().cpu().detach().numpy(), (1, 2, 0))
+    
+
 
     original_image = np.transpose((image.cpu().detach().numpy() / 2) + 0.5, (1, 2, 0))
     # overlayed integrated gradients figure
@@ -76,7 +99,7 @@ def GenerateDeepLift(image, model, data_classes, label):
                                         fig_size=(10, 6))
 
 
-    return deepLiftFig
+    return deepLiftFig, dl_att
 
 def GenerateBatchDeepLift(model, data_batch_iteration,data_classes,batch_it_size, save_file_dir):
     
