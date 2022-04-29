@@ -30,6 +30,7 @@ from ModelArchitectures import PretrainedModel
 from xAI_utils import GenerateDeepLift
 from xAI_utils import DeepLiftRects
 from xAI_utils import GenerateDeepLiftSingle
+from choose_rects import GenerateRectangles
 
 # CUDA
 GPU_TO_USE="0"
@@ -145,13 +146,12 @@ def fig2img(fig):
     return img
 
 #fig = GenerateDeepLift(image = images[0], label=labels[0], data_classes=classes, model = model)
-fig,att = GenerateDeepLiftSingle(image = images[0], label=labels[0], data_classes=classes, model = model)
+fig, att = GenerateDeepLiftSingle(image = images[0], label=labels[0], data_classes=classes, model = model)
 
 deepLiftFig = fig2img(fig)
 convertTensor = transforms.ToTensor()
 deepLiftFig = convertTensor(deepLiftFig)
-print(deepLiftFig.shape)
-print(att.shape)
-
 print(deepLiftFig[0].shape)
-plt.imshow(att)
+
+# print(deepLiftFig[0].shape)
+# plt.imshow(deepLiftFig[0])

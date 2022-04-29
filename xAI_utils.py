@@ -99,8 +99,6 @@ def GenerateDeepLiftSingle(image, model, data_classes, label):
     dl_att = deeplift.attribute(input, target=label.item())
     dl_att = np.transpose(dl_att.squeeze().cpu().detach().numpy(), (1, 2, 0))
     
-
-
     original_image = np.transpose((image.cpu().detach().numpy() / 2) + 0.5, (1, 2, 0))
 
     # Visualization of deep lift attributions
