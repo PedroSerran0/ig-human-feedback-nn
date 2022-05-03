@@ -123,16 +123,18 @@ if not os.path.isdir(history_dir):
 DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
 
 # Hyper-parameters
-EPOCHS = 1
+EPOCHS = 2
 LOSS = torch.nn.CrossEntropyLoss()
 
 # Active Learning parameters
 entropy_thresh = 0
-nr_queries = 0
+nr_queries = 2
 data_classes = ('0', '1', '2', '3', '4')
 
 
-train_losses, train_metrics = active_train_model(model=model, train_loader=train_loader, entropy_thresh=entropy_thresh, nr_queries=nr_queries, data_classes=data_classes, EPOCHS=EPOCHS, DEVICE=DEVICE, LOSS=LOSS)
+train_losses, train_metrics = active_train_model(model=model, train_loader=train_loader, entropy_thresh=entropy_thresh,
+                                                     nr_queries=nr_queries, data_classes=data_classes, EPOCHS=EPOCHS, 
+                                                        DEVICE=DEVICE, LOSS=LOSS)
 
 # val_losses,train_losses,val_metrics,train_metrics = train_model(model=model, model_name=model_name,nr_classes=5,train_loader=train_loader,
 #                  val_loader=val_loader, history_dir=history_dir, weights_dir=weights_dir, data_name=data_name,

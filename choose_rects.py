@@ -32,6 +32,7 @@ class ChooseRectangles:
         self.edgecolor = edgecolor
     
     def draw(self):
+        self.img = self.img.cpu()
         plt.clf()
         plt.imshow(self.img)
         for i, (x1, y1, x2, y2) in enumerate(self.rects):

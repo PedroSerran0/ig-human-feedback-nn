@@ -17,7 +17,7 @@ import torch.optim as optim
 from sklearn.metrics import accuracy_score
 from scipy.stats import entropy
 from xAI_utils import takeThird
-from xAI_utils import GenerateDeepLift
+from xAI_utils import GenerateDeepLiftAtts
 from choose_rects import GetOracleFeedback
 # Train model and sample the most useful images for decision making (entropy based sampling)
 def active_train_model(model, train_loader, entropy_thresh, nr_queries, data_classes, EPOCHS, DEVICE, LOSS):
@@ -124,11 +124,11 @@ def active_train_model(model, train_loader, entropy_thresh, nr_queries, data_cla
         # Print high entropy prediciton data points
         print(f"Number of high entropy predictions after {epoch+1} epochs: {len(high_entropy_pred)}")
 
-        # Visualize entropy distribution
-        df = pd.DataFrame(high_entropy_pred, columns = ['Image','Label','Entropy'])
-        plt.hist(df['Entropy'], color = 'blue', edgecolor = 'black',
-         bins = int(160/10))
-        plt.savefig(f"/home/up201605633/Desktop/Results/DeepLift/AL_tests/entropy_dist_e{epoch+1}.png")
+        # # Visualize entropy distribution
+        # df = pd.DataFrame(high_entropy_pred, columns = ['Image','Label','Entropy'])
+        # plt.hist(df['Entropy'], color = 'blue', edgecolor = 'black',
+        #  bins = int(160/10))
+        # plt.savefig(f"/home/up201605633/Desktop/Results/DeepLift/AL_tests/entropy_dist_e{epoch+1}.png")
 
         # Get highest entropy prediction information
         high_entropy_pred.sort(key=takeThird, reverse=True)
@@ -140,7 +140,14 @@ def active_train_model(model, train_loader, entropy_thresh, nr_queries, data_cla
             if(i < nr_queries):
                 print(high_entropy_pred[i][2]) 
                 query_image = high_entropy_pred[i][0]
-                _, deepLiftAtts = GenerateDeepLift(image=query_image, label=high_entropy_pred[i][1], model = model, data_classes=data_classes)
+                deepLiftAtts = GenerateDeepLiftAtts(image=query_image, label=high_entropy_pred[i][1], model = model, data_classes=data_classes)
+
+                # Aggregate along color channels and normalize to [-1, 1]
+                deepLiftAtts = deepLiftAtts.sum(axis=np.argmax(np.asarray(deepLiftAtts.shape) == 3))
+                deepLiftAtts /= np.max(np.abs(deepLiftAtts))
+                deepLiftAtts = torch.tensor(deepLiftAtts)
+                print(deepLiftAtts.shape)
+
                 selectedRectangles = GetOracleFeedback(query_image, deepLiftAtts, rectSize=28, rectStride=28, nr_rects=5)
 
         # Print Statistics
@@ -149,7 +156,7 @@ def active_train_model(model, train_loader, entropy_thresh, nr_queries, data_cla
         # Append values to the arrays
         # Train Loss
         train_losses[epoch] = avg_train_loss
-
+        
         # Train Metrics
         # Acc
         train_metrics[epoch, 0] = train_acc

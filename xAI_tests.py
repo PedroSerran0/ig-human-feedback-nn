@@ -29,7 +29,6 @@ from captum.attr import visualization as viz
 from CustomDatasets import Aptos19_Dataset
 from ModelArchitectures import PretrainedModel
 from xAI_utils import GenerateDeepLift
-from xAI_utils import DeepLiftRects
 from xAI_utils import GenerateDeepLiftAtts
 from choose_rects import GenerateRectangles
 from choose_rects import ChooseRectangles
@@ -157,20 +156,20 @@ att = GenerateDeepLiftAtts(image = images[test_idx], label=labels[test_idx], dat
 att = att.sum(axis=np.argmax(np.asarray(att.shape) == 3))
 att /= np.max(np.abs(att))
 att = torch.tensor(att)
-#print(att.shape)
+print(att.shape)
 #plt.imshow(att, cmap = "seismic",clim=(-1,1))
 
 
-rectGenerator = GenerateRectangles(att, size=28, stride=28, nr_rects=5)
-rects = rectGenerator.get_ranked_patches()
+# rectGenerator = GenerateRectangles(att, size=28, stride=28, nr_rects=5)
+# rects = rectGenerator.get_ranked_patches()
 
-ogImage = images[test_idx]
-#trans = transforms.ToPILImage()
-#grayImage = trans(ogImage).convert('L')
-ogImage = torch.permute(ogImage,(1,2,0))
+# ogImage = images[test_idx]
+# #trans = transforms.ToPILImage()
+# #grayImage = trans(ogImage).convert('L')
+# ogImage = torch.permute(ogImage,(1,2,0))
 
 
-ui = ChooseRectangles(ogImage,rects)
-ui.draw()
-plt.show()
-print(ui.selected)
+# ui = ChooseRectangles(ogImage,rects)
+# ui.draw()
+# plt.show()
+# print(ui.selected)
