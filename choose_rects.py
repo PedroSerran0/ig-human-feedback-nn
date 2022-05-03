@@ -66,14 +66,6 @@ class GenerateRectangles:
         self.stride = stride
 
     def get_ranked_patches(self):
-        '''
-        # Split tensor into patches
-        patches = self.img.unfold(1, self.size, self.stride)
-        print(patches.shape)
-        # Average pool on each patch
-        avg = nn.AvgPool2d(14,14)
-        avgPatchValues = avg(patches)
-        '''
         avg = nn.AvgPool2d(14, 14)
         avg_patches = avg(self.img[None])
 
@@ -82,23 +74,12 @@ class GenerateRectangles:
         # Sort patches
         ranks = torch.argsort(avg_patches.flatten()).reshape((avg_patches.shape))
         print('ranks shape:', ranks.shape)
-        print(ranks)
         
         _, yi, xi = torch.where(ranks < 10)
 
 
         rects = [(x*14, y*14, (x+1)*14, (y+1)*14) for y, x in zip(yi, xi)]
 
-        # # Get rectangles
-        # ix = ranks
-        # l = len(self.img)
-        # h = self.size
-        # w = l//h
-
-        # print(h,w)
-        # line = ix // l
-        # col = ix % l
-        # rects = [((i//l)*h, (i%l)*w, ((i+1)//l)*h, ((i+1)%l)*w) for i in ix]
         return rects
 
 

@@ -31,6 +31,7 @@ from xAI_utils import GenerateDeepLift
 from xAI_utils import DeepLiftRects
 from xAI_utils import GenerateDeepLiftSingle
 from choose_rects import GenerateRectangles
+from choose_rects import ChooseRectangles
 
 # CUDA
 GPU_TO_USE="0"
@@ -148,10 +149,22 @@ def fig2img(fig):
 #fig = GenerateDeepLift(image = images[0], label=labels[0], data_classes=classes, model = model)
 fig, att = GenerateDeepLiftSingle(image = images[0], label=labels[0], data_classes=classes, model = model)
 
-deepLiftFig = fig2img(fig)
-convertTensor = transforms.ToTensor()
-deepLiftFig = convertTensor(deepLiftFig)
-print(deepLiftFig[0].shape)
+# Aggregate along color channels and normalize to [-1, 1]
+att = att.sum(axis=np.argmax(np.asarray(att.shape) == 3))
+att /= np.max(np.abs(att))
+att = torch.tensor(att)
+#print(att.shape)
+#plt.imshow(att, cmap = "seismic",clim=(-1,1))
 
-# print(deepLiftFig[0].shape)
-# plt.imshow(deepLiftFig[0])
+
+myTensor = att
+rectGenerator = GenerateRectangles(myTensor,size=14,stride=14)
+rects = rectGenerator.get_ranked_patches()
+
+
+if __name__ == '__main__':
+    from skimage.data import astronaut
+    ui = ChooseRectangles(myTensor,rects)
+    ui.draw()
+    plt.show()
+    print(ui.selected)
