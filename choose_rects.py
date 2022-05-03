@@ -60,13 +60,14 @@ class ChooseRectangles:
 
 
 class GenerateRectangles:
-    def __init__(self, img, size, stride):
+    def __init__(self, img, size, stride, nr_rects):
         self.img = img
         self.size = size
         self.stride = stride
+        self.nr_rects = nr_rects
 
     def get_ranked_patches(self):
-        avg = nn.AvgPool2d(14, 14)
+        avg = nn.AvgPool2d(self.size, self.size)
         avg_patches = avg(self.img[None])
 
         print('avg_patches:', avg_patches.shape)
@@ -75,26 +76,38 @@ class GenerateRectangles:
         ranks = torch.argsort(avg_patches.flatten()).reshape((avg_patches.shape))
         print('ranks shape:', ranks.shape)
         
-        _, yi, xi = torch.where(ranks < 10)
+        _, yi, xi = torch.where(ranks < self.nr_rects)
 
 
-        rects = [(x*14, y*14, (x+1)*14, (y+1)*14) for y, x in zip(yi, xi)]
+        rects = [(x*self.size, y*self.size, (x+1)*self.size, (y+1)*self.size) for y, x in zip(yi, xi)]
 
         return rects
 
 
 
-myTensor = torch.rand(224,224)
-rectGenerator = GenerateRectangles(myTensor,size=14,stride=14)
-rects = rectGenerator.get_ranked_patches()
+def GetOracleFeedback(image, model_attributions, rectSize, rectStride, nr_rects):
+    rectGenerator = GenerateRectangles(model_attributions, size=rectSize, stride=rectStride, nr_rects=nr_rects)
+    rects = rectGenerator.get_ranked_patches()
+    image = torch.permute(image,(1,2,0))
 
-
-if __name__ == '__main__':
-    from skimage.data import astronaut
-    ui = ChooseRectangles(myTensor,rects)
+    ui = ChooseRectangles(image,rects)
     ui.draw()
     plt.show()
     print(ui.selected)
+
+    return ui.selected
+
+# myTensor = torch.rand(224,224)
+# rectGenerator = GenerateRectangles(myTensor,size=14,stride=14)
+# rects = rectGenerator.get_ranked_patches()
+
+
+# if __name__ == '__main__':
+#     from skimage.data import astronaut
+#     ui = ChooseRectangles(myTensor,rects)
+#     ui.draw()
+#     plt.show()
+#     print(ui.selected)
 
 # if __name__ == '__main__':
 #     from skimage.data import astronaut

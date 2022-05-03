@@ -52,29 +52,8 @@ def attribute_image_features(algorithm, input, labels, ind, **kwargs):
     
     return tensor_attributions
 
-def DeepLiftRects(image, model, data_classes, label):
 
-    deepLiftFig, deepAtt = GenerateDeepLiftSingle(image, model, data_classes, label)
-
-    print(deepAtt.shape)
-    deepLiftFig = fig2img(deepLiftFig)
-    convertTensor = transforms.ToTensor()
-    deepLiftFig = convertTensor(deepLiftFig)
-    print(deepLiftFig.shape)
-
-    ui = ChooseRectangles(deepLiftFig, [
-        (200, 150, 100, 50),
-        (0, 100, 200, 150),
-        (100, 100, 200, 200),
-    ])
-    ui.draw()
-    plt.show()
-
-    return ui.selected
-
-
-
-def GenerateDeepLiftSingle(image, model, data_classes, label):
+def GenerateDeepLiftAtts(image, model, data_classes, label):
     model.eval()
 
     # Get image classification
@@ -101,14 +80,14 @@ def GenerateDeepLiftSingle(image, model, data_classes, label):
     
     original_image = np.transpose((image.cpu().detach().numpy() / 2) + 0.5, (1, 2, 0))
 
-    # Visualization of deep lift attributions
-    deepLiftFig,_ = viz.visualize_image_attr(dl_att, original_image=original_image,
-                                    method= "heat_map",
-                                    sign="all",
-                                    title="Deep Lift Attribution")
+    # # Visualization of deep lift attributions
+    # deepLiftFig,_ = viz.visualize_image_attr(dl_att, original_image=original_image,
+    #                                 method= "heat_map",
+    #                                 sign="all",
+    #                                 title="Deep Lift Attribution")
 
 
-    return deepLiftFig, dl_att
+    return dl_att
 
 def GenerateDeepLift(image, model, data_classes, label):
     model.eval()

@@ -18,7 +18,7 @@ from sklearn.metrics import accuracy_score
 from scipy.stats import entropy
 from xAI_utils import takeThird
 from xAI_utils import GenerateDeepLift
-
+from choose_rects import GetOracleFeedback
 # Train model and sample the most useful images for decision making (entropy based sampling)
 def active_train_model(model, train_loader, entropy_thresh, nr_queries, data_classes, EPOCHS, DEVICE, LOSS):
     
@@ -135,13 +135,13 @@ def active_train_model(model, train_loader, entropy_thresh, nr_queries, data_cla
         print(f"Highest entropy predictions after {epoch+1} epochs: ")
 
         # Print query entropies and perform Deep Lift on each data point
-        save_file_dir = "/home/up201605633/Desktop/Results/DeepLift/AL_tests/"
+        #save_file_dir = "/home/up201605633/Desktop/Results/DeepLift/AL_tests/"
         for i in range(len(high_entropy_pred)):
             if(i < nr_queries):
                 print(high_entropy_pred[i][2]) 
                 query_image = high_entropy_pred[i][0]
-                deepLiftFig = GenerateDeepLift(image=query_image, label=high_entropy_pred[i][1], model = model, data_classes=data_classes)
-                deepLiftFig.savefig(f"{save_file_dir}deepLift_{i}_e{epoch+1}.png")
+                _, deepLiftAtts = GenerateDeepLift(image=query_image, label=high_entropy_pred[i][1], model = model, data_classes=data_classes)
+                selectedRectangles = GetOracleFeedback(query_image, deepLiftAtts, rectSize=28, rectStride=28, nr_rects=5)
 
         # Print Statistics
         print(f"Train Loss: {avg_train_loss}\tTrain Accuracy: {train_acc}")

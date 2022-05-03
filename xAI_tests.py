@@ -13,6 +13,7 @@ from matplotlib.colors import LinearSegmentedColormap
 import torchvision
 import torchvision.transforms as transforms
 import torchvision.models as models
+import skimage
 
 # Captum Imports
 from captum.attr import IntegratedGradients
@@ -29,7 +30,7 @@ from CustomDatasets import Aptos19_Dataset
 from ModelArchitectures import PretrainedModel
 from xAI_utils import GenerateDeepLift
 from xAI_utils import DeepLiftRects
-from xAI_utils import GenerateDeepLiftSingle
+from xAI_utils import GenerateDeepLiftAtts
 from choose_rects import GenerateRectangles
 from choose_rects import ChooseRectangles
 
@@ -146,8 +147,11 @@ def fig2img(fig):
     img = Image.open(buf)
     return img
 
+# test idx
+test_idx = 8
+
 #fig = GenerateDeepLift(image = images[0], label=labels[0], data_classes=classes, model = model)
-fig, att = GenerateDeepLiftSingle(image = images[0], label=labels[0], data_classes=classes, model = model)
+att = GenerateDeepLiftAtts(image = images[test_idx], label=labels[test_idx], data_classes=classes, model = model)
 
 # Aggregate along color channels and normalize to [-1, 1]
 att = att.sum(axis=np.argmax(np.asarray(att.shape) == 3))
@@ -157,14 +161,16 @@ att = torch.tensor(att)
 #plt.imshow(att, cmap = "seismic",clim=(-1,1))
 
 
-myTensor = att
-rectGenerator = GenerateRectangles(myTensor,size=14,stride=14)
+rectGenerator = GenerateRectangles(att, size=28, stride=28, nr_rects=5)
 rects = rectGenerator.get_ranked_patches()
 
+ogImage = images[test_idx]
+#trans = transforms.ToPILImage()
+#grayImage = trans(ogImage).convert('L')
+ogImage = torch.permute(ogImage,(1,2,0))
 
-if __name__ == '__main__':
-    from skimage.data import astronaut
-    ui = ChooseRectangles(myTensor,rects)
-    ui.draw()
-    plt.show()
-    print(ui.selected)
+
+ui = ChooseRectangles(ogImage,rects)
+ui.draw()
+plt.show()
+print(ui.selected)
