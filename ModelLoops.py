@@ -14,11 +14,15 @@ import pandas as pd
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
+
+# My imports
 from sklearn.metrics import accuracy_score
 from scipy.stats import entropy
 from xAI_utils import takeThird
 from xAI_utils import GenerateDeepLiftAtts
 from choose_rects import GetOracleFeedback
+
+
 # Train model and sample the most useful images for decision making (entropy based sampling)
 def active_train_model(model, train_loader, entropy_thresh, nr_queries, data_classes, EPOCHS, DEVICE, LOSS):
     

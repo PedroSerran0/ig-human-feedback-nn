@@ -156,18 +156,25 @@ att = GenerateDeepLiftAtts(image = images[test_idx], label=labels[test_idx], dat
 att = att.sum(axis=np.argmax(np.asarray(att.shape) == 3))
 att /= np.max(np.abs(att))
 att = torch.tensor(att)
-print(att.shape)
+#print(att.shape)
 #plt.imshow(att, cmap = "seismic",clim=(-1,1))
 
 
 # rectGenerator = GenerateRectangles(att, size=28, stride=28, nr_rects=5)
 # rects = rectGenerator.get_ranked_patches()
 
-# ogImage = images[test_idx]
-# #trans = transforms.ToPILImage()
-# #grayImage = trans(ogImage).convert('L')
-# ogImage = torch.permute(ogImage,(1,2,0))
 
+def imshow(img ,transpose = True):
+    img = img / 2 + 0.5     # unnormalize
+    npimg = img.numpy()
+    plt.imshow(np.transpose(img, (1, 2, 0)))
+    plt.show()
+
+ogImage = images[test_idx]
+#trans = transforms.ToPILImage()
+#grayImage = trans(ogImage).convert('L')
+#ogImage = torch.permute(ogImage,(1,2,0))
+imshow(ogImage)
 
 # ui = ChooseRectangles(ogImage,rects)
 # ui.draw()

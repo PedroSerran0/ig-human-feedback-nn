@@ -5,6 +5,7 @@ import torch
 import torch.nn as nn
 import torchvision
 import torchvision.transforms as transforms
+import numpy as np
 
 def point_inside_rect(pt, rect):
     return rect[0] <= pt[0] <= rect[2] and rect[1] <= pt[1] <= rect[3]
@@ -84,13 +85,21 @@ class GenerateRectangles:
 
         return rects
 
-
+# Plt show function
+def imshow(img ,transpose = True):
+    img = img / 2 + 0.5     # unnormalize
+    npimg = img.numpy()
+    plt.imshow(np.transpose(img, (1, 2, 0)))
+    plt.show()
 
 def GetOracleFeedback(image, model_attributions, rectSize, rectStride, nr_rects):
     rectGenerator = GenerateRectangles(model_attributions, size=rectSize, stride=rectStride, nr_rects=nr_rects)
     rects = rectGenerator.get_ranked_patches()
-    image = torch.permute(image,(1,2,0))
-
+    image = image.cpu()
+    image = image / 2 + 0.5     # unnormalize
+    #npimg = image.numpy()
+    image = np.transpose(image, (1, 2, 0))
+    
     ui = ChooseRectangles(image,rects)
     ui.draw()
     plt.show()
