@@ -195,7 +195,7 @@ def train_model(model, model_name, train_loader, val_loader, history_dir, weight
     img_width = 224
 
     # Hyper-parameters
-    LEARNING_RATE = 1e-6
+    LEARNING_RATE = 1e-4
     OPTIMISER = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)
     BATCH_SIZE = 2
 

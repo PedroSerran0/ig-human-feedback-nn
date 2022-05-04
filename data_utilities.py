@@ -1,13 +1,13 @@
 # Imports
 import os
-import _pickle as CPickle
+import pickle as CPickle
 import numpy as np
 
 
 
 # ROSE Database
 # Function: Get images of a specific split and class
-def get_images(data_split, img_class, attack_type=None, data_path='data/ROSE_DB/data_divided'):
+def get_images(data_split, img_class, attack_type=None, data_path='/home/up201605633/Desktop/ROSE/data_divided'):
 
     # Assert conditions
     # Data split
@@ -47,9 +47,12 @@ def get_images(data_split, img_class, attack_type=None, data_path='data/ROSE_DB/
 
 
 
-# Run this script to test these functions
+#Run this script to test these functions
 if __name__ == '__main__':
-    # a = get_images(data_split='test', img_class=1)
-    # print(a)
+    a = get_images(data_split='train', img_class=1, attack_type=1)
 
+    attackLabels = np.ones(len(a))
+    attackData = np.column_stack((a, attackLabels))
+    print(attackData[0])
+    print(os.path.join("/ahah", attackData[0,0], attackData[0,1]))
     print("Finished.")

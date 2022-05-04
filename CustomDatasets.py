@@ -18,8 +18,104 @@ import torchvision
 import torchvision.transforms as transforms
 from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
+from data_utilities import get_images
+
+#=====================================================================================================
+#======================================= ROSE ========================================================
+#=====================================================================================================
 
 
+def ROSE_map_images_and_labels(data_dir, data_split):
+    # Get attack images
+    attackImages = get_images(data_split=data_split, img_class=1, attack_type=1, data_path=data_dir)
+    attackLabels = np.ones(len(attackImages))
+    attackData = np.column_stack((attackImages, attackLabels))
+
+    # Get genuine images
+    genuineImages = get_images(data_split=data_split, img_class=0, data_path=data_dir)
+    genuineLabels = np.zeros(len(genuineImages))
+    genuineData = np.column_stack((genuineImages, genuineLabels))
+
+    allData = np.concatenate((attackData, genuineData))
+    
+    # Get nr classes
+    _labels_unique = np.unique(allData[:,1])
+    nr_classes = len(_labels_unique)
+
+    # Create labels dictionary
+    labels_dict = dict()
+        
+    for idx, _label in enumerate(_labels_unique):
+        labels_dict[_label] = idx
+
+    return allData, labels_dict, nr_classes
+
+class ROSE_Dataset(Dataset):
+    def __init__(self, base_data_path, data_split, transform=None):
+        """
+        Args:
+            base_data_path (string): Data directory.
+            transform (callable, optional): Optional transform to be applied
+                on a sample.
+        """
+    
+        # Init variables
+        self.base_data_path = base_data_path
+        self.data_split = data_split
+        imgs_labels, self.labels_dict, self.nr_classes = ROSE_map_images_and_labels(base_data_path, data_split)
+        self.images_paths, self.images_labels = imgs_labels[:, 0], imgs_labels[:, 1]
+        self.transform = transform
+
+        return 
+
+    # Method: __len__
+    def __len__(self):
+        return len(self.images_paths)
+
+
+
+    # Method: __getitem__
+    def __getitem__(self, idx):
+        if torch.is_tensor(idx):
+            idx = idx.tolist()
+        
+
+        # Get images
+        img_name = self.images_paths[idx]
+        
+        # Open image with PIL
+        image = Image.open(os.path.join(self.base_data_path, self.data_split, str(self.labels_dict[self.images_labels[idx]]),img_name))
+        #plt.imshow(image)
+        
+        # Perform transformations with Numpy Array
+        image = np.asarray(image)
+        
+        #image = np.reshape(image, newshape=(image.shape[0], image.shape[1], 1))
+        #image = np.concatenate((image, image, image), axis=2)
+
+        # Load image with PIL
+        image = Image.fromarray(image)
+
+        # Get labels
+        label = self.labels_dict[self.images_labels[idx]]
+
+        # Apply transformation
+        if self.transform:
+            image = self.transform(image)
+
+
+        return image, label
+
+
+# # Data Directories
+# your_datasets_dir = "/home/up201605633/Desktop"
+# data_name = "ROSE"
+# data_dir = os.path.join(your_datasets_dir, data_name)
+# data_dir = os.path.join(data_dir, "data_divided")
+# train_set = ROSE_Dataset(base_data_path=data_dir, data_split="train")
+# titty = train_set[0]
+# test_set = ROSE_Dataset(base_data_path=data_dir, data_split="test")
+# titty = test_set[len(test_set)-2]
 #=====================================================================================================
 #======================================= ISIC 2017 ===================================================
 #=====================================================================================================
