@@ -25,9 +25,9 @@ from data_utilities import get_images
 #=====================================================================================================
 
 
-def ROSE_map_images_and_labels(data_dir, data_split):
+def ROSE_map_images_and_labels(data_dir, data_split, attack_type=1):
     # Get attack images
-    attackImages = get_images(data_split=data_split, img_class=1, attack_type=1, data_path=data_dir)
+    attackImages = get_images(data_split=data_split, img_class=1, attack_type=attack_type, data_path=data_dir)
     attackLabels = np.ones(len(attackImages))
     attackData = np.column_stack((attackImages, attackLabels))
 
@@ -51,7 +51,7 @@ def ROSE_map_images_and_labels(data_dir, data_split):
     return allData, labels_dict, nr_classes
 
 class ROSE_Dataset(Dataset):
-    def __init__(self, base_data_path, data_split, transform=None):
+    def __init__(self, base_data_path, data_split, attack_type=None, transform=None):
         """
         Args:
             base_data_path (string): Data directory.
@@ -62,7 +62,8 @@ class ROSE_Dataset(Dataset):
         # Init variables
         self.base_data_path = base_data_path
         self.data_split = data_split
-        imgs_labels, self.labels_dict, self.nr_classes = ROSE_map_images_and_labels(base_data_path, data_split)
+        self.attack_type = attack_type
+        imgs_labels, self.labels_dict, self.nr_classes = ROSE_map_images_and_labels(base_data_path, data_split, attack_type=attack_type)
         self.images_paths, self.images_labels = imgs_labels[:, 0], imgs_labels[:, 1]
         self.transform = transform
 
