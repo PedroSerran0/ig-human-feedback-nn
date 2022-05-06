@@ -244,7 +244,7 @@ def Aptos19_map_images_and_labels(data_dir, label_file):
 
 # Create a Dataset Class
 class Aptos19_Dataset(Dataset):
-    def __init__(self, base_data_path, label_file, transform=None):
+    def __init__(self, base_data_path, label_file, transform=None, transform_orig=None):
         """
         Args:
             base_data_path (string): Data directory.
@@ -259,16 +259,11 @@ class Aptos19_Dataset(Dataset):
         imgs_labels, self.labels_dict, self.nr_classes = Aptos19_map_images_and_labels(base_data_path, label_file)
         self.images_paths, self.images_labels = imgs_labels[:, 0], imgs_labels[:, 1]
         self.transform = transform
+        self.transform_orig = transform_orig    
 
-
-        return 
-    
-    
     # Method: __len__
     def __len__(self):
         return len(self.images_paths)
-
-
 
     # Method: __getitem__
     def __getitem__(self, idx):
@@ -290,7 +285,7 @@ class Aptos19_Dataset(Dataset):
         #image = np.concatenate((image, image, image), axis=2)
 
         # Load image with PIL
-        image = Image.fromarray(image)
+        image = image_orig = Image.fromarray(image)
 
         # Get labels
         label = self.labels_dict[self.images_labels[idx]]
@@ -298,9 +293,11 @@ class Aptos19_Dataset(Dataset):
         # Apply transformation
         if self.transform:
             image = self.transform(image)
+        if self.transform_orig:
+            image_orig = self.transform_orig(image_orig)
 
-
-        return image, label
+        #print(img_name, idx)
+        return image, image_orig, label, idx
 
 
 #=====================================================================================================

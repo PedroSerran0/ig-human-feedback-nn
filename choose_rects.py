@@ -45,7 +45,12 @@ class ChooseRectangles:
                 (x1, y1), x2-x1, y2-y1,
                 facecolor='none', edgecolor=self.edgecolor, lw=3))
         plt.connect('button_press_event', self.button_press)
+        plt.connect('key_press_event', self.key_press)
         plt.draw()
+
+    def key_press(self, event):
+        if event.key in ['enter', 'escape']:
+            plt.close()
 
     def button_press(self, event):
         if event.button == 1 and event.inaxes:
@@ -104,8 +109,9 @@ def GetOracleFeedback(image, model_attributions, rectSize, rectStride, nr_rects)
     ui.draw()
     plt.show()
     print(ui.selected)
+    selected_rects = ui.get_selected_rectangles()
 
-    return ui.selected
+    return ui.selected, selected_rects
 
 # myTensor = torch.rand(224,224)
 # rectGenerator = GenerateRectangles(myTensor,size=14,stride=14)

@@ -22,6 +22,13 @@ from xAI_utils import takeThird
 from xAI_utils import GenerateDeepLiftAtts
 from choose_rects import GetOracleFeedback
 
+HITL_LAMBDA = 1
+
+def HITL_Loss(logits, Y, images, W, image_grads):
+    # Aggregate along color channels and normalize to [-1, 1]
+    #image_grads /= torch.max(torch.abs(image_grads))
+
+    return torch.mean(W * (image_grads**2))
 
 # Train model and sample the most useful images for decision making (entropy based sampling)
 def active_train_model(model, train_loader, entropy_thresh, nr_queries, data_classes, EPOCHS, DEVICE, LOSS):
@@ -38,6 +45,9 @@ def active_train_model(model, train_loader, entropy_thresh, nr_queries, data_cla
 
     # Initialise metrics arrays
     train_metrics = np.zeros((EPOCHS, 4))
+
+    # Weights for human in the loop loss
+    W = torch.zeros((len(train_loader.dataset), 224, 224), device=DEVICE)
 
     for epoch in range(EPOCHS):
         # Epoch 
@@ -62,7 +72,7 @@ def active_train_model(model, train_loader, entropy_thresh, nr_queries, data_cla
         model.train()
 
         # Iterate through dataloader
-        for batch_idx, (images, labels) in enumerate(train_loader):
+        for batch_idx, (images, images_og, labels, indices) in enumerate(train_loader):
             
             # move data, labels and model to DEVICE (GPU or CPU)
             images, labels = images.to(DEVICE), labels.to(DEVICE)
@@ -73,7 +83,13 @@ def active_train_model(model, train_loader, entropy_thresh, nr_queries, data_cla
             OPTIMISER.zero_grad()
 
             # Forward pass: compute predicted outputs by passing inputs to the model
+            images.requires_grad = True
             logits = model(images)
+
+            logits.sum().backward(retain_graph=True)
+            #image_grads = torch.autograd.grad(logits.sum(), images, create_graph=True)[0]
+            image_grads = images.grad.mean(axis=1)
+
 
             if(epoch >= 0):
                 # Copy logits to cpu
@@ -87,14 +103,14 @@ def active_train_model(model, train_loader, entropy_thresh, nr_queries, data_cla
                     pred_entropy = entropy(pred_probs[idx])
 
                     if(pred_entropy > entropy_thresh):
-                        temp_image_info = [images[idx], labels[idx], pred_entropy]
+                        temp_image_info = [images_og[idx], labels[idx], pred_entropy, indices[idx]]
                         high_entropy_pred.append(temp_image_info)  
 
 
 
             # Compute the batch loss
             # Using CrossEntropy w/ Softmax
-            loss = LOSS(logits, labels)
+            loss = LOSS(logits, labels) #+ HITL_LAMBDA*HITL_Loss(logits, labels, images, W[indices], image_grads)
 
             # Backward pass: compute gradient of the loss with respect to model parameters
             loss.backward()
@@ -144,6 +160,7 @@ def active_train_model(model, train_loader, entropy_thresh, nr_queries, data_cla
             if(i < nr_queries):
                 print(high_entropy_pred[i][2]) 
                 query_image = high_entropy_pred[i][0]
+                query_index = high_entropy_pred[i][3]
                 deepLiftAtts = GenerateDeepLiftAtts(image=query_image, label=high_entropy_pred[i][1], model = model, data_classes=data_classes)
 
                 # Aggregate along color channels and normalize to [-1, 1]
@@ -152,7 +169,13 @@ def active_train_model(model, train_loader, entropy_thresh, nr_queries, data_cla
                 deepLiftAtts = torch.tensor(deepLiftAtts)
                 print(deepLiftAtts.shape)
 
-                selectedRectangles = GetOracleFeedback(query_image, deepLiftAtts, rectSize=28, rectStride=28, nr_rects=5)
+                __,selectedRectangles = GetOracleFeedback(query_image, deepLiftAtts, rectSize=28, rectStride=28, nr_rects=5)
+                print(selectedRectangles)
+
+                # change the weights W=1 in the selected rectangles area
+                print("index:", query_index)
+                for rect in selectedRectangles:
+                    W[query_index, rect[1]:rect[3], rect[0]:rect[2]] = 1
 
         # Print Statistics
         print(f"Train Loss: {avg_train_loss}\tTrain Accuracy: {train_acc}")

@@ -77,9 +77,9 @@ val_transforms = torchvision.transforms.Compose([
 
 # Load and count data samples
 # Train Dataset
-train_set = Aptos19_Dataset(base_data_path=train_dir, label_file=train_label_file, transform=train_transforms)
+train_set = Aptos19_Dataset(base_data_path=train_dir, label_file=train_label_file, transform=train_transforms, transform_orig=val_transforms)
 print(f"Number of Train Images: {len(train_set)} | Label Dict: {train_set.labels_dict}")
-val_set = Aptos19_Dataset(base_data_path=train_dir, label_file=train_label_file, transform=val_transforms)
+val_set = Aptos19_Dataset(base_data_path=train_dir, label_file=train_label_file, transform=val_transforms, transform_orig=val_transforms)
 
 # Set target train and val sizes
 val_size = 0.2 # portion of the dataset
@@ -123,7 +123,7 @@ if not os.path.isdir(history_dir):
 DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
 
 # Hyper-parameters
-EPOCHS = 2
+EPOCHS = 6
 LOSS = torch.nn.CrossEntropyLoss()
 
 # Active Learning parameters

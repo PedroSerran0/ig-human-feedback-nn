@@ -81,102 +81,108 @@ train_set = Aptos19_Dataset(base_data_path=train_dir, label_file=train_label_fil
 print(f"Number of Train Images: {len(train_set)} | Label Dict: {train_set.labels_dict}")
 val_set = Aptos19_Dataset(base_data_path=train_dir, label_file=train_label_file, transform=val_transforms)
 
-# Set target train and val sizes
-val_size = 0.2 # portion of the dataset
-num_train = len(train_set)
-indices = list(range(num_train))
-split_idx = int(np.floor(0.2 * num_train))
+img, label, idx = train_set[17]
 
-train_idx, valid_idx = indices[:split_idx], indices[split_idx:]
-assert len(train_idx) != 0 and len(valid_idx) != 0
+# # Set target train and val sizes
+# val_size = 0.2 # portion of the dataset
+# num_train = len(train_set)
+# indices = list(range(num_train))
+# split_idx = int(np.floor(0.2 * num_train))
 
-# Split the train set into train and val
-train_indices, val_indices = sklearn.model_selection.train_test_split(indices)
-train_set = torch.utils.data.Subset(train_set, train_indices)
-val_set = torch.utils.data.Subset(val_set, val_indices)
+# train_idx, valid_idx = indices[:split_idx], indices[split_idx:]
+# assert len(train_idx) != 0 and len(valid_idx) != 0
 
-# get batch and build loaders
-BATCH_SIZE = 10
-train_loader = torch.utils.data.DataLoader(dataset=train_set, batch_size=BATCH_SIZE, shuffle=True)
-val_loader = torch.utils.data.DataLoader(dataset=val_set, batch_size=BATCH_SIZE, shuffle=True)
+# # Split the train set into train and val
+# train_indices, val_indices = sklearn.model_selection.train_test_split(indices)
+# train_set = torch.utils.data.Subset(train_set, train_indices)
+# val_set = torch.utils.data.Subset(val_set, val_indices)
 
-nr_classes = 5
+# # get batch and build loaders
+# BATCH_SIZE = 10
+# train_loader = torch.utils.data.DataLoader(dataset=train_set, batch_size=BATCH_SIZE, shuffle=True)
+# val_loader = torch.utils.data.DataLoader(dataset=val_set, batch_size=BATCH_SIZE, shuffle=True)
 
-# Define model
-model = PretrainedModel(pretrained_model="efficientnet_b1", n_outputs=5)
-model_name = "efficientNet_b1"
+# nr_classes = 5
 
-# Set model path
-trained_model_name = f"{model_name}_{data_name}"
-model_dir = os.path.join(trained_models_dir, trained_model_name)
-weights_dir = os.path.join(model_dir, "weights")
-history_dir = os.path.join(model_dir, "history")
+# # Define model
+# model = PretrainedModel(pretrained_model="efficientnet_b1", n_outputs=5)
+# model_name = "efficientNet_b1"
 
-# Load model
-model_path = os.path.join(weights_dir, f"{model_name}_{data_name}.pt")
-model.load_state_dict(torch.load(model_path, map_location = device))
-model.eval()
+# # Set model path
+# trained_model_name = f"{model_name}_{data_name}"
+# model_dir = os.path.join(trained_models_dir, trained_model_name)
+# weights_dir = os.path.join(model_dir, "weights")
+# history_dir = os.path.join(model_dir, "history")
 
-#=====================================================================================================
-#======================================  xAI Experiments =============================================
-#=====================================================================================================
+# # Load model
+# model_path = os.path.join(weights_dir, f"{model_name}_{data_name}.pt")
+# model.load_state_dict(torch.load(model_path, map_location = device))
+# model.eval()
 
-# Define the Aptos Classes
-classes = ('0', '1', '2', '3', '4')
+# #=====================================================================================================
+# #======================================  xAI Experiments =============================================
+# #=====================================================================================================
 
-# Print and show images
-x_image_dir = "/home/up201605633/Desktop/Results/DeepLift/"
+# # Define the Aptos Classes
+# classes = ('0', '1', '2', '3', '4')
 
-# get images from batch
-dataiter = iter(val_loader)
-images, labels = dataiter.next()
+# # Print and show images
+# x_image_dir = "/home/up201605633/Desktop/Results/DeepLift/"
 
-#Generate Explanations for 10 batches (100 images)
-# for i in range(1):
-#     dataiter = iter(val_loader)
-#     GenerateBatchDeepLift(data_batch_iteration=dataiter, batch_it_size=10,model = model, data_classes=classes, save_file_dir=x_image_dir)
+# # get images from batch
+# dataiter = iter(val_loader)
+# images, labels = dataiter.next()
+
+# #Generate Explanations for 10 batches (100 images)
+# # for i in range(1):
+# #     dataiter = iter(val_loader)
+# #     GenerateBatchDeepLift(data_batch_iteration=dataiter, batch_it_size=10,model = model, data_classes=classes, save_file_dir=x_image_dir)
 
 
-def fig2img(fig):
-    """Convert a Matplotlib figure to a PIL Image and return it"""
-    import io
-    buf = io.BytesIO()
-    fig.savefig(buf)
-    buf.seek(0)
-    img = Image.open(buf)
-    return img
+# def fig2img(fig):
+#     """Convert a Matplotlib figure to a PIL Image and return it"""
+#     import io
+#     buf = io.BytesIO()
+#     fig.savefig(buf)
+#     buf.seek(0)
+#     img = Image.open(buf)
+#     return img
 
-# test idx
-test_idx = 8
+# # test idx
+# test_idx = 8
 
-#fig = GenerateDeepLift(image = images[0], label=labels[0], data_classes=classes, model = model)
-att = GenerateDeepLiftAtts(image = images[test_idx], label=labels[test_idx], data_classes=classes, model = model)
+# #fig = GenerateDeepLift(image = images[0], label=labels[0], data_classes=classes, model = model)
+# att = GenerateDeepLiftAtts(image = images[test_idx], label=labels[test_idx], data_classes=classes, model = model)
 
-# Aggregate along color channels and normalize to [-1, 1]
-att = att.sum(axis=np.argmax(np.asarray(att.shape) == 3))
-att /= np.max(np.abs(att))
-att = torch.tensor(att)
-#print(att.shape)
-#plt.imshow(att, cmap = "seismic",clim=(-1,1))
+# # Aggregate along color channels and normalize to [-1, 1]
+# att = att.sum(axis=np.argmax(np.asarray(att.shape) == 3))
+# att /= np.max(np.abs(att))
+# att = torch.tensor(att)
+# #print(att.shape)
+# #plt.imshow(att, cmap = "seismic",clim=(-1,1))
 
 
 # rectGenerator = GenerateRectangles(att, size=28, stride=28, nr_rects=5)
 # rects = rectGenerator.get_ranked_patches()
 
 
-def imshow(img ,transpose = True):
-    img = img / 2 + 0.5     # unnormalize
-    npimg = img.numpy()
-    plt.imshow(np.transpose(img, (1, 2, 0)))
-    plt.show()
+# def imshow(img ,transpose = True):
+#     img = img / 2 + 0.5     # unnormalize
+#     npimg = img.numpy()
+#     plt.imshow(np.transpose(img, (1, 2, 0)))
+#     plt.show()
 
-ogImage = images[test_idx]
-#trans = transforms.ToPILImage()
-#grayImage = trans(ogImage).convert('L')
-#ogImage = torch.permute(ogImage,(1,2,0))
-imshow(ogImage)
+# ogImage = images[test_idx]
+# #trans = transforms.ToPILImage()
+# #grayImage = trans(ogImage).convert('L')
+# ogImage = torch.permute(ogImage,(1,2,0))
+# #imshow(ogImage)
 
 # ui = ChooseRectangles(ogImage,rects)
 # ui.draw()
 # plt.show()
 # print(ui.selected)
+# selected_rects = ui.get_selected_rectangles()
+# print(selected_rects)
+
+

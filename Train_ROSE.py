@@ -40,7 +40,7 @@ np.random.seed(random_seed)
 # Data Directories
 your_datasets_dir = "/home/up201605633/Desktop"
 data_name = "ROSE"
-attack_type = 1
+attack_type = 5
 data_dir = os.path.join(your_datasets_dir, data_name)
 data_dir = os.path.join(data_dir, "data_divided")
 
