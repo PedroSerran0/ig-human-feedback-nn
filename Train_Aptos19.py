@@ -78,7 +78,7 @@ val_transforms = torchvision.transforms.Compose([
 # Load and count data samples
 # Train Dataset
 train_set = Aptos19_Dataset(base_data_path=train_dir, label_file=train_label_file, transform=train_transforms, transform_orig=val_transforms)
-print(f"Number of Train Images: {len(train_set)} | Label Dict: {train_set.labels_dict}")
+print(f"Number of Total Images: {len(train_set)} | Label Dict: {train_set.labels_dict}")
 val_set = Aptos19_Dataset(base_data_path=train_dir, label_file=train_label_file, transform=val_transforms, transform_orig=val_transforms)
 
 # Set target train and val sizes
@@ -130,7 +130,6 @@ LOSS = torch.nn.CrossEntropyLoss()
 entropy_thresh = 0
 nr_queries = 2
 data_classes = ('0', '1', '2', '3', '4')
-
 
 train_losses, train_metrics = active_train_model(model=model, train_loader=train_loader, entropy_thresh=entropy_thresh,
                                                      nr_queries=nr_queries, data_classes=data_classes, EPOCHS=EPOCHS, 

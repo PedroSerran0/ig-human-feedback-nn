@@ -61,12 +61,12 @@ def takeInt(elem):
     return elem[2]
 
 myList.sort(key=takeInt, reverse=True)
-print(myList)
+print(myList[1][2])
 
-df = pd.DataFrame(myList, columns = ['Column_A','Column_B','Column_C'])
+# df = pd.DataFrame(myList, columns = ['Column_A','Column_B','Column_C'])
 
-print(df)
+# print(df)
 
-plt.hist(df['Column_C'], color = 'blue', edgecolor = 'black',
-         bins = int(5))
-plt.savefig("attempt1")
+# plt.hist(df['Column_C'], color = 'blue', edgecolor = 'black',
+#          bins = int(5))
+# plt.savefig("attempt1")

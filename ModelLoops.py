@@ -30,6 +30,13 @@ def HITL_Loss(logits, Y, images, W, image_grads):
 
     return torch.mean(W * (image_grads**2))
 
+def my_loss(Ypred, X):
+    # it "works" with both retain_graph=True and create_graph=True, but I think
+    # the latter is what we want
+    grad = torch.autograd.grad(Ypred.sum(), X, create_graph=True)[0]
+    # grad has a shape: torch.Size([256, 3, 32, 32])
+    return (grad**2).mean()
+
 # Train model and sample the most useful images for decision making (entropy based sampling)
 def active_train_model(model, train_loader, entropy_thresh, nr_queries, data_classes, EPOCHS, DEVICE, LOSS):
     
@@ -47,6 +54,7 @@ def active_train_model(model, train_loader, entropy_thresh, nr_queries, data_cla
     train_metrics = np.zeros((EPOCHS, 4))
 
     # Weights for human in the loop loss
+    print(f"Length of train loader: {len(train_loader)}")
     W = torch.zeros((len(train_loader.dataset), 224, 224), device=DEVICE)
 
     for epoch in range(EPOCHS):
@@ -73,7 +81,6 @@ def active_train_model(model, train_loader, entropy_thresh, nr_queries, data_cla
 
         # Iterate through dataloader
         for batch_idx, (images, images_og, labels, indices) in enumerate(train_loader):
-            
             # move data, labels and model to DEVICE (GPU or CPU)
             images, labels = images.to(DEVICE), labels.to(DEVICE)
             model = model.to(DEVICE)
@@ -86,9 +93,9 @@ def active_train_model(model, train_loader, entropy_thresh, nr_queries, data_cla
             images.requires_grad = True
             logits = model(images)
 
-            logits.sum().backward(retain_graph=True)
+            #logits.sum().backward(retain_graph=True)
             #image_grads = torch.autograd.grad(logits.sum(), images, create_graph=True)[0]
-            image_grads = images.grad.mean(axis=1)
+            #image_grads = images.grad.mean(axis=1)
 
 
             if(epoch >= 0):
@@ -101,16 +108,15 @@ def active_train_model(model, train_loader, entropy_thresh, nr_queries, data_cla
                 for idx in range(len(pred_probs)):
                     # calculate entropy for each single image logits in batch
                     pred_entropy = entropy(pred_probs[idx])
-
                     if(pred_entropy > entropy_thresh):
-                        temp_image_info = [images_og[idx], labels[idx], pred_entropy, indices[idx]]
+                        temp_image_info = [images_og[idx], labels[idx], pred_entropy, indices[idx], idx]
                         high_entropy_pred.append(temp_image_info)  
 
 
 
             # Compute the batch loss
             # Using CrossEntropy w/ Softmax
-            loss = LOSS(logits, labels) #+ HITL_LAMBDA*HITL_Loss(logits, labels, images, W[indices], image_grads)
+            loss = LOSS(logits, labels) + my_loss(logits, images)#+ HITL_LAMBDA*HITL_Loss(logits, labels, images, W[indices], image_grads)
 
             # Backward pass: compute gradient of the loss with respect to model parameters
             loss.backward()
@@ -160,7 +166,7 @@ def active_train_model(model, train_loader, entropy_thresh, nr_queries, data_cla
             if(i < nr_queries):
                 print(high_entropy_pred[i][2]) 
                 query_image = high_entropy_pred[i][0]
-                query_index = high_entropy_pred[i][3]
+                query_index = high_entropy_pred[i][4]
                 deepLiftAtts = GenerateDeepLiftAtts(image=query_image, label=high_entropy_pred[i][1], model = model, data_classes=data_classes)
 
                 # Aggregate along color channels and normalize to [-1, 1]
@@ -174,6 +180,7 @@ def active_train_model(model, train_loader, entropy_thresh, nr_queries, data_cla
 
                 # change the weights W=1 in the selected rectangles area
                 print("index:", query_index)
+                print(f"Length of rectangle vector: {len(W)}")
                 for rect in selectedRectangles:
                     W[query_index, rect[1]:rect[3], rect[0]:rect[2]] = 1
 
