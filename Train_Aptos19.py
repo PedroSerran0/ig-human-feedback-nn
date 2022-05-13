@@ -77,11 +77,12 @@ val_transforms = torchvision.transforms.Compose([
 
 # Load and count data samples
 # Train Dataset
-train_set = Aptos19_Dataset(base_data_path=train_dir, label_file=train_label_file, transform=train_transforms, transform_orig=val_transforms)
+train_set = Aptos19_Dataset(base_data_path=train_dir, label_file=train_label_file, transform=train_transforms, transform_orig=val_transforms, split='train')
 print(f"Number of Total Images: {len(train_set)} | Label Dict: {train_set.labels_dict}")
-val_set = Aptos19_Dataset(base_data_path=train_dir, label_file=train_label_file, transform=val_transforms, transform_orig=val_transforms)
+val_set = Aptos19_Dataset(base_data_path=train_dir, label_file=train_label_file, transform=val_transforms, transform_orig=val_transforms, split='test')
 
 # Set target train and val sizes
+''''
 val_size = 0.2 # portion of the dataset
 num_train = len(train_set)
 indices = list(range(num_train))
@@ -94,11 +95,12 @@ assert len(train_idx) != 0 and len(valid_idx) != 0
 train_indices, val_indices = sklearn.model_selection.train_test_split(indices)
 train_set = torch.utils.data.Subset(train_set, train_indices)
 val_set = torch.utils.data.Subset(val_set, val_indices)
+'''
 
 # get batch and build loaders
 BATCH_SIZE = 10
-train_loader = torch.utils.data.DataLoader(dataset=train_set, batch_size=BATCH_SIZE, shuffle=True)
-val_loader = torch.utils.data.DataLoader(dataset=val_set, batch_size=BATCH_SIZE, shuffle=True)
+train_loader = torch.utils.data.DataLoader(dataset=train_set, batch_size=BATCH_SIZE, shuffle=True, num_workers=4)
+val_loader = torch.utils.data.DataLoader(dataset=val_set, batch_size=BATCH_SIZE, shuffle=True, num_workers=4)
 
 
 model = PretrainedModel(pretrained_model="efficientnet_b1", n_outputs=5)

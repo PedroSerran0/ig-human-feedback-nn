@@ -1,6 +1,7 @@
 import numpy as np
 import os
 from PIL import Image
+from tqdm import tqdm
 
 # PyTorch Imports
 import torch
@@ -24,18 +25,12 @@ from choose_rects import GetOracleFeedback
 
 HITL_LAMBDA = 1
 
-def HITL_Loss(logits, Y, images, W, image_grads):
-    # Aggregate along color channels and normalize to [-1, 1]
-    #image_grads /= torch.max(torch.abs(image_grads))
-
-    return torch.mean(W * (image_grads**2))
-
-def my_loss(Ypred, X):
+def my_loss(Ypred, X, W):
     # it "works" with both retain_graph=True and create_graph=True, but I think
     # the latter is what we want
     grad = torch.autograd.grad(Ypred.sum(), X, create_graph=True)[0]
     # grad has a shape: torch.Size([256, 3, 32, 32])
-    return (grad**2).mean()
+    return (W *(grad**2).mean(1)).mean()
 
 # Train model and sample the most useful images for decision making (entropy based sampling)
 def active_train_model(model, train_loader, entropy_thresh, nr_queries, data_classes, EPOCHS, DEVICE, LOSS):
@@ -80,9 +75,9 @@ def active_train_model(model, train_loader, entropy_thresh, nr_queries, data_cla
         model.train()
 
         # Iterate through dataloader
-        for batch_idx, (images, images_og, labels, indices) in enumerate(train_loader):
+        for batch_idx, (images, images_og, labels, indices) in enumerate(tqdm(train_loader)):
             # move data, labels and model to DEVICE (GPU or CPU)
-            images, labels = images.to(DEVICE), labels.to(DEVICE)
+            images, labels, images_og = images.to(DEVICE), labels.to(DEVICE), images_og.to(DEVICE)
             model = model.to(DEVICE)
 
             # Find the loss and update the model parameters accordingly
@@ -92,11 +87,17 @@ def active_train_model(model, train_loader, entropy_thresh, nr_queries, data_cla
             # Forward pass: compute predicted outputs by passing inputs to the model
             images.requires_grad = True
             logits = model(images)
+            loss = LOSS(logits, labels)
 
-            #logits.sum().backward(retain_graph=True)
-            #image_grads = torch.autograd.grad(logits.sum(), images, create_graph=True)[0]
-            #image_grads = images.grad.mean(axis=1)
+            images_og.requires_grad = True
+            logits = model(images_og)
+            loss += my_loss(logits, images_og, W[indices])
 
+            # Backward pass: compute gradient of the loss with respect to model parameters
+            loss.backward()
+            
+            # Perform a single optimization step (parameter update)
+            OPTIMISER.step()
 
             if(epoch >= 0):
                 # Copy logits to cpu
@@ -116,13 +117,13 @@ def active_train_model(model, train_loader, entropy_thresh, nr_queries, data_cla
 
             # Compute the batch loss
             # Using CrossEntropy w/ Softmax
-            loss = LOSS(logits, labels) + my_loss(logits, images)#+ HITL_LAMBDA*HITL_Loss(logits, labels, images, W[indices], image_grads)
+            #loss = LOSS(logits, labels) + my_loss(logits, images)
 
-            # Backward pass: compute gradient of the loss with respect to model parameters
-            loss.backward()
+            # # Backward pass: compute gradient of the loss with respect to model parameters
+            # loss.backward()
             
-            # Perform a single optimization step (parameter update)
-            OPTIMISER.step()
+            # # Perform a single optimization step (parameter update)
+            # OPTIMISER.step()
             
             # Update batch losses
             run_train_loss += (loss.item() * images.size(0))
@@ -175,7 +176,7 @@ def active_train_model(model, train_loader, entropy_thresh, nr_queries, data_cla
                 deepLiftAtts = torch.tensor(deepLiftAtts)
                 print(deepLiftAtts.shape)
 
-                __,selectedRectangles = GetOracleFeedback(query_image, deepLiftAtts, rectSize=28, rectStride=28, nr_rects=5)
+                __,selectedRectangles = GetOracleFeedback(query_image.detach().cpu().numpy(), deepLiftAtts, rectSize=28, rectStride=28, nr_rects=5)
                 print(selectedRectangles)
 
                 # change the weights W=1 in the selected rectangles area
@@ -207,6 +208,14 @@ def active_train_model(model, train_loader, entropy_thresh, nr_queries, data_cla
             print(f"Train loss decreased from {min_train_loss} to {avg_train_loss}.")
             min_train_loss = avg_train_loss
 
+        # DEBUG
+        '''
+        for i in range(len(W)):
+            if W[i].sum() > 0:
+                X, Xaug, indices = train_loader.dataset[i]
+                imsave(f'X-{epoch}-{i}.png', X[i])
+                imsave(f'W-{epoch}-{i}.png', W[i])
+        '''
 
     # Finish statement
     print("Finished.")

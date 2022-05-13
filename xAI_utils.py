@@ -66,7 +66,7 @@ def GenerateDeepLiftAtts(image, model, data_classes, label):
     _, predicted = torch.max(outputs, 1)
 
     input = image.unsqueeze(0)
-    input.requires_grad = True
+    #input.requires_grad = True
     
     # Generate the visual explnations (saliency maps)
     # DeepLift

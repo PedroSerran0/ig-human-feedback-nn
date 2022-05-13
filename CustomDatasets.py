@@ -244,7 +244,7 @@ def Aptos19_map_images_and_labels(data_dir, label_file):
 
 # Create a Dataset Class
 class Aptos19_Dataset(Dataset):
-    def __init__(self, base_data_path, label_file, transform=None, transform_orig=None):
+    def __init__(self, base_data_path, label_file, transform=None, transform_orig=None, split= 'train'):
         """
         Args:
             base_data_path (string): Data directory.
@@ -257,9 +257,20 @@ class Aptos19_Dataset(Dataset):
         self.label_file = label_file
         self.base_data_path = base_data_path
         imgs_labels, self.labels_dict, self.nr_classes = Aptos19_map_images_and_labels(base_data_path, label_file)
+
+        # split train/test
+        assert split in ['train', 'test']
+        rand = np.random.RandomState(123)
+        ix = rand.choice(len(imgs_labels), len(imgs_labels), False)
+        if split == 'train':
+            ix = ix[:int(len(ix)*0.8)]
+        else:
+            ix = ix[int(len(ix)*0.8):]
+        imgs_labels = imgs_labels[ix]
+
         self.images_paths, self.images_labels = imgs_labels[:, 0], imgs_labels[:, 1]
         self.transform = transform
-        self.transform_orig = transform_orig    
+        self.transform_orig = transform_orig
 
     # Method: __len__
     def __len__(self):

@@ -33,7 +33,6 @@ class ChooseRectangles:
         self.edgecolor = edgecolor
     
     def draw(self):
-        self.img = self.img.cpu()
         plt.clf()
         plt.imshow(self.img)
         for i, (x1, y1, x2, y2) in enumerate(self.rects):
@@ -100,7 +99,6 @@ def imshow(img ,transpose = True):
 def GetOracleFeedback(image, model_attributions, rectSize, rectStride, nr_rects):
     rectGenerator = GenerateRectangles(model_attributions, size=rectSize, stride=rectStride, nr_rects=nr_rects)
     rects = rectGenerator.get_ranked_patches()
-    image = image.cpu()
     image = image / 2 + 0.5     # unnormalize
     #npimg = image.numpy()
     image = np.transpose(image, (1, 2, 0))
