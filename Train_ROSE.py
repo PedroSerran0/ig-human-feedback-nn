@@ -40,7 +40,7 @@ np.random.seed(random_seed)
 # Data Directories
 your_datasets_dir = "/home/up201605633/Desktop"
 data_name = "ROSE"
-attack_type = 7
+attack_type = None
 data_dir = os.path.join(your_datasets_dir, data_name)
 data_dir = os.path.join(data_dir, "data_divided")
 
@@ -69,14 +69,11 @@ val_transforms = torchvision.transforms.Compose([
 # Load and count data samples
 # Train Dataset
 
-train_set = ROSE_Dataset(base_data_path=data_dir, data_split="train", attack_type=attack_type, transform=train_transforms)
-print(f"Number of Train Images: {len(train_set)} | Label Dict: {train_set.labels_dict}")
-
 
 test_toggle = 0
 
 if test_toggle == 0:
-    val_set = ROSE_Dataset(base_data_path=data_dir, data_split="train", attack_type=attack_type, transform=val_transforms)
+    train_set = ROSE_Dataset(base_data_path=data_dir, data_split="train", attack_type=attack_type, transform=val_transforms)
     # Set target train and val sizes
     val_size = 0.2 # portion of the dataset
     num_train = len(train_set)
@@ -88,22 +85,31 @@ if test_toggle == 0:
 
     # Split the train set into train and val
     train_indices, val_indices = sklearn.model_selection.train_test_split(indices)
-    train_set = torch.utils.data.Subset(train_set, train_indices)
-    val_set = torch.utils.data.Subset(val_set, val_indices)
+    train_subset = torch.utils.data.Subset(train_set, train_indices)
+    val_subset = torch.utils.data.Subset(train_set, val_indices)
+    #print(f"Number of Train Images: {len(train_set)}")
+    #print(f"Number of Train Images: {len(train_set)} | Label Dict: {train_set.labels_dict}")
+    #print(f"Number of Validation Images: {len(val_set)} | Label Dict: {val_set.labels_dict}")
 
 if test_toggle==1:
+    train_set = ROSE_Dataset(base_data_path=data_dir, data_split="train", attack_type=attack_type, transform=train_transforms)
+    print(f"Number of Train Images: {len(train_set)} | Label Dict: {train_set.labels_dict}")
     val_set = ROSE_Dataset(base_data_path=data_dir, data_split="test", attack_type=attack_type, transform=val_transforms)
 
 # get batch and build loaders
 BATCH_SIZE = 10
-train_loader = torch.utils.data.DataLoader(dataset=train_set, batch_size=BATCH_SIZE, shuffle=True)
-val_loader = torch.utils.data.DataLoader(dataset=val_set, batch_size=BATCH_SIZE, shuffle=True)
+train_loader = torch.utils.data.DataLoader(dataset=train_subset, batch_size=BATCH_SIZE, shuffle=True)
+val_loader = torch.utils.data.DataLoader(dataset=val_subset, batch_size=BATCH_SIZE, shuffle=True)
 
 
 model = PretrainedModel(pretrained_model="efficientnet_b1", n_outputs=2)
 model_name = "efficientNet_b1"
 
+
 # Set model path
+if(attack_type == None):
+    attack_type = "All"
+
 trained_model_name = f"{model_name}_{data_name}_{attack_type}"
 model_dir = os.path.join(trained_models_dir, trained_model_name)
 

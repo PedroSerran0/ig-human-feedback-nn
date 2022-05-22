@@ -49,7 +49,7 @@ data_dir = os.path.join(your_datasets_dir, data_name)
 
 
 #Model Directory
-trained_models_dir = "/home/up201605633/Desktop/trained_models"
+trained_models_dir = "/home/up201605633/Desktop/trained_AL_models"
 
 # train data
 train_dir = os.path.join(data_dir, "train")
@@ -102,7 +102,6 @@ BATCH_SIZE = 10
 train_loader = torch.utils.data.DataLoader(dataset=train_set, batch_size=BATCH_SIZE, shuffle=True, num_workers=4)
 val_loader = torch.utils.data.DataLoader(dataset=val_set, batch_size=BATCH_SIZE, shuffle=True, num_workers=4)
 
-
 model = PretrainedModel(pretrained_model="efficientnet_b1", n_outputs=5)
 model_name = "efficientNet_b1"
 
@@ -125,40 +124,41 @@ if not os.path.isdir(history_dir):
 DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
 
 # Hyper-parameters
-EPOCHS = 6
+EPOCHS = 20
 LOSS = torch.nn.CrossEntropyLoss()
 
 # Active Learning parameters
 entropy_thresh = 0
-nr_queries = 2
+nr_queries = 10
 data_classes = ('0', '1', '2', '3', '4')
+start_epoch = 10
 
-train_losses, train_metrics = active_train_model(model=model, train_loader=train_loader, entropy_thresh=entropy_thresh,
-                                                     nr_queries=nr_queries, data_classes=data_classes, EPOCHS=EPOCHS, 
-                                                        DEVICE=DEVICE, LOSS=LOSS)
+val_losses,train_losses,val_metrics,train_metrics = active_train_model(model=model, model_name=model_name, data_name=data_name, train_loader=train_loader, val_loader=val_loader, history_dir=history_dir, weights_dir=weights_dir,
+                                                entropy_thresh=entropy_thresh, nr_queries=nr_queries, data_classes=data_classes, start_epoch = start_epoch,
+                                                 EPOCHS=EPOCHS, DEVICE=DEVICE, LOSS=LOSS)
 
 # val_losses,train_losses,val_metrics,train_metrics = train_model(model=model, model_name=model_name,nr_classes=5,train_loader=train_loader,
 #                  val_loader=val_loader, history_dir=history_dir, weights_dir=weights_dir, data_name=data_name,
 #                     LOSS=LOSS, EPOCHS=EPOCHS, DEVICE=DEVICE)
 
 
-# plt.figure(figsize=(10,5))
-# plt.title(f"Training and Validation Loss ({trained_model_name})")
-# plt.plot(val_losses,label="val-loss")
-# plt.plot(train_losses,label="train-loss")
-# plt.xlabel("Iterations")
-# plt.ylabel("Loss")
-# plt.legend()
-# plt.savefig(os.path.join(trained_models_dir,f"{trained_model_name}_loss_{EPOCHS}E.png"))
-# plt.show()
+plt.figure(figsize=(10,5))
+plt.title(f"Training and Validation Loss ({trained_model_name}_AL)")
+plt.plot(val_losses,label="val-loss")
+plt.plot(train_losses,label="train-loss")
+plt.xlabel("Iterations")
+plt.ylabel("Loss")
+plt.legend()
+plt.savefig(os.path.join(trained_models_dir,f"{trained_model_name}_loss_{EPOCHS}E_AL.png"))
+plt.show()
 
 
-# plt.figure(figsize=(10,5))
-# plt.title(f"Training and Validation Accuracy ({trained_model_name})")
-# plt.plot(val_metrics[:,0], label = "val-acc")
-# plt.plot(train_metrics[:,0], label="train-acc")
-# plt.xlabel("Iterations")
-# plt.ylabel("Accuracy")
-# plt.legend()
-# plt.savefig(os.path.join(trained_models_dir,f"{trained_model_name}_acc_{EPOCHS}E.png"))
-# plt.show()
+plt.figure(figsize=(10,5))
+plt.title(f"Training and Validation Accuracy ({trained_model_name}_AL)")
+plt.plot(val_metrics[:,0], label = "val-acc")
+plt.plot(train_metrics[:,0], label="train-acc")
+plt.xlabel("Iterations")
+plt.ylabel("Accuracy")
+plt.legend()
+plt.savefig(os.path.join(trained_models_dir,f"{trained_model_name}_acc_{EPOCHS}E_AL.png"))
+plt.show()

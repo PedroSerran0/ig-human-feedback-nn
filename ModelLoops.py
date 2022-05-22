@@ -1,6 +1,6 @@
 import numpy as np
 import os
-from PIL import Image
+from PIL import Image 
 from tqdm import tqdm
 
 # PyTorch Imports
@@ -33,7 +33,7 @@ def my_loss(Ypred, X, W):
     return (W *(grad**2).mean(1)).mean()
 
 # Train model and sample the most useful images for decision making (entropy based sampling)
-def active_train_model(model, train_loader, entropy_thresh, nr_queries, data_classes, EPOCHS, DEVICE, LOSS):
+def active_train_model(model, model_name, data_name, train_loader, val_loader, history_dir, weights_dir, entropy_thresh, nr_queries, start_epoch, data_classes, EPOCHS, DEVICE, LOSS):
     
     # Hyper-parameters
     LEARNING_RATE = 1e-6
@@ -41,12 +41,15 @@ def active_train_model(model, train_loader, entropy_thresh, nr_queries, data_cla
 
     # Initialise min_train and min_val loss trackers
     min_train_loss = np.inf
+    min_val_loss = np.inf
 
     # Initialise losses arrays
     train_losses = np.zeros((EPOCHS, ))
+    val_losses = np.zeros_like(train_losses)
 
     # Initialise metrics arrays
     train_metrics = np.zeros((EPOCHS, 4))
+    val_metrics = np.zeros_like(train_metrics)
 
     # Weights for human in the loop loss
     print(f"Length of train loader: {len(train_loader)}")
@@ -99,7 +102,7 @@ def active_train_model(model, train_loader, entropy_thresh, nr_queries, data_cla
             # Perform a single optimization step (parameter update)
             OPTIMISER.step()
 
-            if(epoch >= 0):
+            if(epoch >= start_epoch):
                 # Copy logits to cpu
                 pred_logits = logits.cpu().detach().numpy()
                 pred_logits = torch.FloatTensor(pred_logits)
@@ -209,17 +212,116 @@ def active_train_model(model, train_loader, entropy_thresh, nr_queries, data_cla
             min_train_loss = avg_train_loss
 
         # DEBUG
-        '''
-        for i in range(len(W)):
-            if W[i].sum() > 0:
-                X, Xaug, indices = train_loader.dataset[i]
-                imsave(f'X-{epoch}-{i}.png', X[i])
-                imsave(f'W-{epoch}-{i}.png', W[i])
-        '''
+        transf = transforms.ToPILImage()
+        for j in range(len(W)):
+            if W[j].sum() > 0:
+                Xaug, X, labels, indices = train_loader.dataset[j]
+                #print(len(X))
+                #img1 = transf(X[j])
+                #img1 = img1.save(f'/home/up201605633/Desktop/AL_debug/X-{epoch}-{j}.png')
+                
+                img2 = transf(W[j])
+                img2 = img2.save(f'/home/up201605633/Desktop/AL_debug/W-{epoch}-{j}.png')
+                
+        # Validation Loop
+        print("Validation Phase")
+
+
+        # Initialise lists to compute scores
+        y_val_true = list()
+        y_val_pred = list()
+
+
+        # Running train loss
+        run_val_loss = 0.0
+
+
+        # Put model in evaluation mode
+        model.eval()
+
+        # Deactivate gradients
+        with torch.no_grad():
+
+            # Iterate through dataloader
+            for batch_idx, (images, images_og, labels, indices) in enumerate(tqdm(val_loader)):
+
+                # Move data data anda model to GPU (or not)
+                images, labels = images.to(DEVICE), labels.to(DEVICE)
+                model = model.to(DEVICE)
+
+                # Forward pass: compute predicted outputs by passing inputs to the model
+                logits = model(images)
+                
+                # Compute the batch loss
+                # Using CrossEntropy w/ Softmax
+                loss = LOSS(logits, labels)
+                
+                # Update batch losses
+                run_val_loss += (loss.item() * images.size(0))
+
+                # Concatenate lists
+                y_val_true += list(labels.cpu().detach().numpy())
+                
+                # Using Softmax Activation
+                # Apply Softmax on Logits and get the argmax to get the predicted labels
+                s_logits = torch.nn.Softmax(dim=1)(logits)
+                s_logits = torch.argmax(s_logits, dim=1)
+                y_val_pred += list(s_logits.cpu().detach().numpy())
+
+            
+
+            # Compute Average Train Loss
+            avg_val_loss = run_val_loss/len(val_loader.dataset)
+
+            # Compute Training Accuracy
+            val_acc = accuracy_score(y_true=y_val_true, y_pred=y_val_pred)
+            # val_recall = recall_score(y_true=y_val_true, y_pred=y_val_pred, average="weighted")
+            # val_precision = precision_score(y_true=y_val_true, y_pred=y_val_pred, average="weighted")
+            # val_f1 = f1_score(y_true=y_val_true, y_pred=y_val_pred, average="weighted")
+
+            # Print Statistics
+            print(f"Validation Loss: {avg_val_loss}\tValidation Accuracy: {val_acc}")
+            # print(f"Validation Loss: {avg_val_loss}\tValidation Accuracy: {val_acc}\tValidation Recall: {val_recall}\tValidation Precision: {val_precision}\tValidation F1-Score: {val_f1}")
+
+            # Append values to the arrays
+            # Train Loss
+            val_losses[epoch] = avg_val_loss
+            # Save it to directory
+            fname = os.path.join(history_dir, f"{model_name}_val_losses_AL.npy")
+            np.save(file=fname, arr=val_losses, allow_pickle=True)
+
+
+            # Train Metrics
+            # Acc
+            val_metrics[epoch, 0] = val_acc
+            # Recall
+            # val_metrics[epoch, 1] = val_recall
+            # Precision
+            # val_metrics[epoch, 2] = val_precision
+            # F1-Score
+            # val_metrics[epoch, 3] = val_f1
+            # Save it to directory
+            fname = os.path.join(history_dir, f"{model_name}_val_metrics_AL.npy")
+            np.save(file=fname, arr=val_metrics, allow_pickle=True)
+
+            # Update Variables
+            # Min validation loss and save if validation loss decreases
+            if avg_val_loss < min_val_loss:
+                print(f"Validation loss decreased from {min_val_loss} to {avg_val_loss}.")
+                min_val_loss = avg_val_loss
+
+                print("Saving best model on validation...")
+
+                # Save checkpoint
+                model_path = os.path.join(weights_dir, f"{model_name}_{data_name}_AL.pt")
+                torch.save(model.state_dict(), model_path)
+
+                print(f"Successfully saved at: {model_path}")
+    
 
     # Finish statement
     print("Finished.")
-    return train_losses,train_metrics
+    return val_losses,train_losses,val_metrics,train_metrics
 
 # Train model and iterate through the validation set, saving the best model
 def train_model(model, model_name, train_loader, val_loader, history_dir, weights_dir, nr_classes, data_name ,EPOCHS, DEVICE, LOSS):

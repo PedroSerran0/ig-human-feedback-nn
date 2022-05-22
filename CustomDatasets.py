@@ -25,7 +25,7 @@ from data_utilities import get_images
 #=====================================================================================================
 
 
-def ROSE_map_images_and_labels(data_dir, data_split, attack_type=1):
+def ROSE_map_images_and_labels(data_dir, data_split, attack_type):
     # Get attack images
     attackImages = get_images(data_split=data_split, img_class=1, attack_type=attack_type, data_path=data_dir)
     attackLabels = np.ones(len(attackImages))

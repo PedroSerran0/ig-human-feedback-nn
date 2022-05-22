@@ -31,6 +31,10 @@ myTensor = [[ 0.1126,  0.0123,  0.0713,  0.1200,  0.0913],
 myTensor = torch.FloatTensor(myTensor)
 myTensor = torch.add(myTensor, 0.0001)
 
+transf = transforms.ToPILImage()
+img1 = transf(myTensor)
+img1 = img1.save("/home/up201605633/Desktop/tensor2.jpg")
+
 probs = torch.softmax(myTensor,1)
 
 myList = list()
