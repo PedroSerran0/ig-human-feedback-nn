@@ -33,10 +33,10 @@ def my_loss(Ypred, X, W):
     return (W *(grad**2).mean(1)).mean()
 
 # Train model and sample the most useful images for decision making (entropy based sampling)
-def active_train_model(model, model_name, data_name, train_loader, val_loader, history_dir, weights_dir, entropy_thresh, nr_queries, start_epoch, data_classes, EPOCHS, DEVICE, LOSS):
+def active_train_model(model, model_name, data_name, train_loader, val_loader, history_dir, weights_dir, entropy_thresh, nr_queries, start_epoch, data_classes, EPOCHS, DEVICE, LOSS, percentage=100):
     
     # Hyper-parameters
-    LEARNING_RATE = 1e-6
+    LEARNING_RATE = 1e-4
     OPTIMISER = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)
 
     # Initialise min_train and min_val loss trackers
@@ -220,8 +220,8 @@ def active_train_model(model, model_name, data_name, train_loader, val_loader, h
                 #img1 = transf(X[j])
                 #img1 = img1.save(f'/home/up201605633/Desktop/AL_debug/X-{epoch}-{j}.png')
                 
-                img2 = transf(W[j])
-                img2 = img2.save(f'/home/up201605633/Desktop/AL_debug/W-{epoch}-{j}.png')
+                #img2 = transf(W[j])
+                #img2 = img2.save(f'/home/up201605633/Desktop/AL_debug/W-{epoch}-{j}.png')
                 
         # Validation Loop
         print("Validation Phase")
@@ -287,7 +287,7 @@ def active_train_model(model, model_name, data_name, train_loader, val_loader, h
             # Train Loss
             val_losses[epoch] = avg_val_loss
             # Save it to directory
-            fname = os.path.join(history_dir, f"{model_name}_val_losses_AL.npy")
+            fname = os.path.join(history_dir, f"{model_name}_val_losses_AL_{percentage}.npy")
             np.save(file=fname, arr=val_losses, allow_pickle=True)
 
 
@@ -301,7 +301,7 @@ def active_train_model(model, model_name, data_name, train_loader, val_loader, h
             # F1-Score
             # val_metrics[epoch, 3] = val_f1
             # Save it to directory
-            fname = os.path.join(history_dir, f"{model_name}_val_metrics_AL.npy")
+            fname = os.path.join(history_dir, f"{model_name}_val_metrics_AL_{percentage}.npy")
             np.save(file=fname, arr=val_metrics, allow_pickle=True)
 
             # Update Variables
@@ -313,7 +313,7 @@ def active_train_model(model, model_name, data_name, train_loader, val_loader, h
                 print("Saving best model on validation...")
 
                 # Save checkpoint
-                model_path = os.path.join(weights_dir, f"{model_name}_{data_name}_AL.pt")
+                model_path = os.path.join(weights_dir, f"{model_name}_{data_name}_AL_{percentage}.pt")
                 torch.save(model.state_dict(), model_path)
 
                 print(f"Successfully saved at: {model_path}")
@@ -324,7 +324,7 @@ def active_train_model(model, model_name, data_name, train_loader, val_loader, h
     return val_losses,train_losses,val_metrics,train_metrics
 
 # Train model and iterate through the validation set, saving the best model
-def train_model(model, model_name, train_loader, val_loader, history_dir, weights_dir, nr_classes, data_name ,EPOCHS, DEVICE, LOSS):
+def train_model(model, model_name, train_loader, val_loader, history_dir, weights_dir, nr_classes, data_name ,EPOCHS, DEVICE, LOSS, percentage = 100):
     
     # Mean and STD to Normalize the inputs into pretrained models
     MEAN = [0.485, 0.456, 0.406]
@@ -336,7 +336,7 @@ def train_model(model, model_name, train_loader, val_loader, history_dir, weight
     img_width = 224
 
     # Hyper-parameters
-    LEARNING_RATE = 1e-4
+    LEARNING_RATE = 1e-6
     OPTIMISER = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)
     BATCH_SIZE = 2
 
@@ -376,7 +376,7 @@ def train_model(model, model_name, train_loader, val_loader, history_dir, weight
 
 
         # Iterate through dataloader
-        for batch_idx, (images, labels) in enumerate(train_loader):
+        for batch_idx, (images, images_og, labels, indices) in enumerate(train_loader):
 
             # Move data data anda model to GPU (or not)
             images, labels = images.to(DEVICE), labels.to(DEVICE)
@@ -432,7 +432,7 @@ def train_model(model, model_name, train_loader, val_loader, history_dir, weight
         # Train Loss
         train_losses[epoch] = avg_train_loss
         # Save it to directory
-        fname = os.path.join(history_dir, f"{model_name}_tr_losses.npy")
+        fname = os.path.join(history_dir, f"{model_name}_tr_losses_{percentage}.npy")
         np.save(file=fname, arr=train_losses, allow_pickle=True)
 
 
@@ -446,7 +446,7 @@ def train_model(model, model_name, train_loader, val_loader, history_dir, weight
         # F1-Score
         # train_metrics[epoch, 3] = train_f1
         # Save it to directory
-        fname = os.path.join(history_dir, f"{model_name}_tr_metrics.npy")
+        fname = os.path.join(history_dir, f"{model_name}_tr_metrics_{percentage}.npy")
         np.save(file=fname, arr=train_metrics, allow_pickle=True)
 
 
@@ -477,7 +477,7 @@ def train_model(model, model_name, train_loader, val_loader, history_dir, weight
         with torch.no_grad():
 
             # Iterate through dataloader
-            for batch_idx, (images, labels) in enumerate(val_loader):
+            for batch_idx, (images, images_og, labels, indices) in enumerate(val_loader):
 
                 # Move data data anda model to GPU (or not)
                 images, labels = images.to(DEVICE), labels.to(DEVICE)
@@ -521,7 +521,7 @@ def train_model(model, model_name, train_loader, val_loader, history_dir, weight
             # Train Loss
             val_losses[epoch] = avg_val_loss
             # Save it to directory
-            fname = os.path.join(history_dir, f"{model_name}_val_losses.npy")
+            fname = os.path.join(history_dir, f"{model_name}_val_losses_{percentage}.npy")
             np.save(file=fname, arr=val_losses, allow_pickle=True)
 
 
@@ -547,7 +547,7 @@ def train_model(model, model_name, train_loader, val_loader, history_dir, weight
                 print("Saving best model on validation...")
 
                 # Save checkpoint
-                model_path = os.path.join(weights_dir, f"{model_name}_{data_name}.pt")
+                model_path = os.path.join(weights_dir, f"{model_name}_{data_name}_{percentage}.pt")
                 torch.save(model.state_dict(), model_path)
 
                 print(f"Successfully saved at: {model_path}")

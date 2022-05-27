@@ -76,29 +76,20 @@ val_transforms = torchvision.transforms.Compose([
 ])
 
 # Load and count data samples
+train_fraction = 0.01
+val_fraction = 0.5
+
 # Train Dataset
-train_set = Aptos19_Dataset(base_data_path=train_dir, label_file=train_label_file, transform=train_transforms, transform_orig=val_transforms, split='train')
-print(f"Number of Total Images: {len(train_set)} | Label Dict: {train_set.labels_dict}")
-val_set = Aptos19_Dataset(base_data_path=train_dir, label_file=train_label_file, transform=val_transforms, transform_orig=val_transforms, split='test')
+train_set = Aptos19_Dataset(base_data_path=train_dir, label_file=train_label_file, transform=train_transforms, transform_orig=val_transforms, split='train', fraction = train_fraction)
+print(f"Number of Total Train Images: {len(train_set)} | Label Dict: {train_set.labels_dict}")
+val_set = Aptos19_Dataset(base_data_path=train_dir, label_file=train_label_file, transform=val_transforms, transform_orig=val_transforms, split='test', fraction = val_fraction)
+print(f"Number of Total Validation Images: {len(val_set)} | Label Dict: {val_set.labels_dict}")
 
-# Set target train and val sizes
-''''
-val_size = 0.2 # portion of the dataset
-num_train = len(train_set)
-indices = list(range(num_train))
-split_idx = int(np.floor(0.2 * num_train))
 
-train_idx, valid_idx = indices[:split_idx], indices[split_idx:]
-assert len(train_idx) != 0 and len(valid_idx) != 0
 
-# Split the train set into train and val
-train_indices, val_indices = sklearn.model_selection.train_test_split(indices)
-train_set = torch.utils.data.Subset(train_set, train_indices)
-val_set = torch.utils.data.Subset(val_set, val_indices)
-'''
 
 # get batch and build loaders
-BATCH_SIZE = 10
+BATCH_SIZE = 1
 train_loader = torch.utils.data.DataLoader(dataset=train_set, batch_size=BATCH_SIZE, shuffle=True, num_workers=4)
 val_loader = torch.utils.data.DataLoader(dataset=val_set, batch_size=BATCH_SIZE, shuffle=True, num_workers=4)
 
@@ -124,41 +115,47 @@ if not os.path.isdir(history_dir):
 DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
 
 # Hyper-parameters
-EPOCHS = 20
+EPOCHS = 30
 LOSS = torch.nn.CrossEntropyLoss()
 
 # Active Learning parameters
 entropy_thresh = 0
-nr_queries = 10
+nr_queries = 5
 data_classes = ('0', '1', '2', '3', '4')
-start_epoch = 10
+start_epoch = 4
+percentage = train_fraction*100
 
 val_losses,train_losses,val_metrics,train_metrics = active_train_model(model=model, model_name=model_name, data_name=data_name, train_loader=train_loader, val_loader=val_loader, history_dir=history_dir, weights_dir=weights_dir,
-                                                entropy_thresh=entropy_thresh, nr_queries=nr_queries, data_classes=data_classes, start_epoch = start_epoch,
+                                                entropy_thresh=entropy_thresh, nr_queries=nr_queries, data_classes=data_classes, start_epoch = start_epoch, percentage = 1,
                                                  EPOCHS=EPOCHS, DEVICE=DEVICE, LOSS=LOSS)
 
 # val_losses,train_losses,val_metrics,train_metrics = train_model(model=model, model_name=model_name,nr_classes=5,train_loader=train_loader,
 #                  val_loader=val_loader, history_dir=history_dir, weights_dir=weights_dir, data_name=data_name,
-#                     LOSS=LOSS, EPOCHS=EPOCHS, DEVICE=DEVICE)
+#                     LOSS=LOSS, EPOCHS=EPOCHS, DEVICE=DEVICE, percentage=percentage)
 
 
 plt.figure(figsize=(10,5))
-plt.title(f"Training and Validation Loss ({trained_model_name}_AL)")
+plt.title(f"Training and Validation Metrics ({trained_model_name}__{percentage}%)")
 plt.plot(val_losses,label="val-loss")
 plt.plot(train_losses,label="train-loss")
-plt.xlabel("Iterations")
-plt.ylabel("Loss")
-plt.legend()
-plt.savefig(os.path.join(trained_models_dir,f"{trained_model_name}_loss_{EPOCHS}E_AL.png"))
-plt.show()
-
-
-plt.figure(figsize=(10,5))
-plt.title(f"Training and Validation Accuracy ({trained_model_name}_AL)")
 plt.plot(val_metrics[:,0], label = "val-acc")
 plt.plot(train_metrics[:,0], label="train-acc")
 plt.xlabel("Iterations")
-plt.ylabel("Accuracy")
+plt.ylabel("Metrics")
 plt.legend()
-plt.savefig(os.path.join(trained_models_dir,f"{trained_model_name}_acc_{EPOCHS}E_AL.png"))
+plt.savefig(os.path.join(trained_models_dir,f"{trained_model_name}_metrics_{EPOCHS}E__{percentage}.png"))
 plt.show()
+
+print("plot saved")
+
+# plt.figure(figsize=(10,5))
+# plt.title(f"Training and Validation Accuracy ({trained_model_name}_AL)")
+# plt.plot(val_metrics[:,0], label = "val-acc")
+# plt.plot(train_metrics[:,0], label="train-acc")
+# plt.xlabel("Iterations")
+# plt.ylabel("Accuracy")
+# plt.legend()
+# plt.savefig(os.path.join(trained_models_dir,f"{trained_model_name}_acc_{EPOCHS}E_AL.png"))
+# plt.show()
+
+# print("accuracy plot saved")

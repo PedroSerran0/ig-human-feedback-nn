@@ -244,7 +244,7 @@ def Aptos19_map_images_and_labels(data_dir, label_file):
 
 # Create a Dataset Class
 class Aptos19_Dataset(Dataset):
-    def __init__(self, base_data_path, label_file, transform=None, transform_orig=None, split= 'train'):
+    def __init__(self, base_data_path, label_file, transform=None, transform_orig=None, split= 'train', fraction=1):
         """
         Args:
             base_data_path (string): Data directory.
@@ -267,6 +267,11 @@ class Aptos19_Dataset(Dataset):
         else:
             ix = ix[int(len(ix)*0.8):]
         imgs_labels = imgs_labels[ix]
+
+        # get desired fraction of data
+        data_size = len(imgs_labels)
+        target_size = round(fraction * data_size)
+        imgs_labels = imgs_labels[0:(target_size-1)]
 
         self.images_paths, self.images_labels = imgs_labels[:, 0], imgs_labels[:, 1]
         self.transform = transform

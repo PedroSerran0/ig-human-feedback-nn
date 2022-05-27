@@ -31,6 +31,22 @@ myTensor = [[ 0.1126,  0.0123,  0.0713,  0.1200,  0.0913],
 myTensor = torch.FloatTensor(myTensor)
 myTensor = torch.add(myTensor, 0.0001)
 
+epochs = [0,1,2,3,4,5,6,7,8,9,10]
+x1 = [20,23,25,26,27,28,29,35,67,32]
+x2 = [0.1,0.2,0.5,0.7,0.9,0.7,0.9,1.1,1.5,1.7]
+x3 = [200,203,250,260,270,280,290,305,670,320]
+
+plt.figure(figsize=(10,5))
+plt.title(f"Training and Validation Loss (_AL)")
+plt.plot(x1,label="train-loss")
+plt.plot(x2,label="val-loss")
+plt.plot(x3,label="train-loss")
+plt.xlabel("Iterations")
+plt.ylabel("Loss")
+plt.legend()
+#plt.savefig(os.path.join(trained_models_dir,f"{trained_model_name}_loss_{EPOCHS}E_AL.png"))
+plt.show()
+
 transf = transforms.ToPILImage()
 img1 = transf(myTensor)
 img1 = img1.save("/home/up201605633/Desktop/tensor2.jpg")

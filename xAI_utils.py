@@ -75,7 +75,8 @@ def GenerateDeepLiftAtts(image, model, data_classes, label):
     # Reset model's gradients
     model.zero_grad()
     input = input.type('torch.FloatTensor') 
-    dl_att = deeplift.attribute(input, target=label.item())
+    #dl_att = deeplift.attribute(input, target=label.item())
+    dl_att = deeplift.attribute(input, target=predicted)
     dl_att = np.transpose(dl_att.squeeze().cpu().detach().numpy(), (1, 2, 0))
     
     original_image = np.transpose((image.cpu().detach().numpy() / 2) + 0.5, (1, 2, 0))

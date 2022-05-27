@@ -81,7 +81,7 @@ train_set = Aptos19_Dataset(base_data_path=train_dir, label_file=train_label_fil
 print(f"Number of Train Images: {len(train_set)} | Label Dict: {train_set.labels_dict}")
 val_set = Aptos19_Dataset(base_data_path=train_dir, label_file=train_label_file, transform=val_transforms)
 
-img, label, idx = train_set[17]
+img, img_og, label, idx = train_set[17]
 
 # # Set target train and val sizes
 # val_size = 0.2 # portion of the dataset
@@ -97,41 +97,43 @@ img, label, idx = train_set[17]
 # train_set = torch.utils.data.Subset(train_set, train_indices)
 # val_set = torch.utils.data.Subset(val_set, val_indices)
 
-# # get batch and build loaders
-# BATCH_SIZE = 10
-# train_loader = torch.utils.data.DataLoader(dataset=train_set, batch_size=BATCH_SIZE, shuffle=True)
-# val_loader = torch.utils.data.DataLoader(dataset=val_set, batch_size=BATCH_SIZE, shuffle=True)
+# get batch and build loaders
+BATCH_SIZE = 10
+train_loader = torch.utils.data.DataLoader(dataset=train_set, batch_size=BATCH_SIZE, shuffle=True)
+val_loader = torch.utils.data.DataLoader(dataset=val_set, batch_size=BATCH_SIZE, shuffle=True)
 
-# nr_classes = 5
+nr_classes = 5
 
-# # Define model
-# model = PretrainedModel(pretrained_model="efficientnet_b1", n_outputs=5)
-# model_name = "efficientNet_b1"
+# Define model
+model = PretrainedModel(pretrained_model="efficientnet_b1", n_outputs=5)
+model_name = "efficientNet_b1"
 
-# # Set model path
-# trained_model_name = f"{model_name}_{data_name}"
-# model_dir = os.path.join(trained_models_dir, trained_model_name)
-# weights_dir = os.path.join(model_dir, "weights")
-# history_dir = os.path.join(model_dir, "history")
+# Set model path
+trained_model_name = f"{model_name}_{data_name}"
+model_dir = os.path.join(trained_models_dir, trained_model_name)
+weights_dir = os.path.join(model_dir, "weights")
+history_dir = os.path.join(model_dir, "history")
 
-# # Load model
-# model_path = os.path.join(weights_dir, f"{model_name}_{data_name}.pt")
-# model.load_state_dict(torch.load(model_path, map_location = device))
-# model.eval()
+# Load model
+model_path = os.path.join(weights_dir, f"{model_name}_{data_name}.pt")
+model.load_state_dict(torch.load(model_path, map_location = device))
+model.eval()
 
 # #=====================================================================================================
 # #======================================  xAI Experiments =============================================
 # #=====================================================================================================
 
-# # Define the Aptos Classes
-# classes = ('0', '1', '2', '3', '4')
+# Define the Aptos Classes
+classes = ('0', '1', '2', '3', '4')
 
-# # Print and show images
-# x_image_dir = "/home/up201605633/Desktop/Results/DeepLift/"
+# Print and show images
+x_image_dir = "/home/up201605633/Desktop/Results/DeepLift/"
 
-# # get images from batch
-# dataiter = iter(val_loader)
-# images, labels = dataiter.next()
+# get images from batch
+dataiter = iter(val_loader)
+images, labels = dataiter.next()
+
+
 
 # #Generate Explanations for 10 batches (100 images)
 # # for i in range(1):
