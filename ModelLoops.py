@@ -92,9 +92,13 @@ def active_train_model(model, model_name, data_name, train_loader, val_loader, h
             logits = model(images)
             loss = LOSS(logits, labels)
 
+            inter_loss = loss
             images_og.requires_grad = True
             logits = model(images_og)
             loss += my_loss(logits, images_og, W[indices])
+
+            print(f"The cross entropy loss is {inter_loss}")
+            print(f"The custom imposed loss is : {loss-inter_loss}")
 
             # Backward pass: compute gradient of the loss with respect to model parameters
             loss.backward()

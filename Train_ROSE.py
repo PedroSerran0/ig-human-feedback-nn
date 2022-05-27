@@ -142,39 +142,41 @@ data_classes = ('0', '1')
 #                                                         DEVICE=DEVICE, LOSS=LOSS)
 
 
-val_losses,train_losses,val_metrics,train_metrics = train_model(model=model, model_name=model_name,nr_classes=2,train_loader=train_loader,
-                 val_loader=val_loader, history_dir=history_dir, weights_dir=weights_dir, data_name=data_name,
-                    LOSS=LOSS, EPOCHS=EPOCHS, DEVICE=DEVICE)
+# val_losses,train_losses,val_metrics,train_metrics = train_model(model=model, model_name=model_name,nr_classes=2,train_loader=train_loader,
+#                  val_loader=val_loader, history_dir=history_dir, weights_dir=weights_dir, data_name=data_name,
+#                     LOSS=LOSS, EPOCHS=EPOCHS, DEVICE=DEVICE)
 
-plt.figure(figsize=(10,5))
-plt.title(f"Training and Validation Loss ({trained_model_name})")
-plt.plot(val_losses,label="val-loss")
-plt.plot(train_losses,label="train-loss")
-plt.xlabel("Iterations")
-plt.ylabel("Loss")
-plt.legend()
-plt.savefig(os.path.join(trained_models_dir,f"{trained_model_name}_loss_{EPOCHS}E.png"))
-plt.show()
-
-
-plt.figure(figsize=(10,5))
-plt.title(f"Training and Validation Accuracy ({trained_model_name})")
-plt.plot(val_metrics[:,0], label = "val-acc")
-plt.plot(train_metrics[:,0], label="train-acc")
-plt.xlabel("Iterations")
-plt.ylabel("Accuracy")
-plt.legend()
-plt.savefig(os.path.join(trained_models_dir,f"{trained_model_name}_acc_{EPOCHS}E.png"))
-plt.show()
+# plt.figure(figsize=(10,5))
+# plt.title(f"Training and Validation Loss ({trained_model_name})")
+# plt.plot(val_losses,label="val-loss")
+# plt.plot(train_losses,label="train-loss")
+# plt.xlabel("Iterations")
+# plt.ylabel("Loss")
+# plt.legend()
+# plt.savefig(os.path.join(trained_models_dir,f"{trained_model_name}_loss_{EPOCHS}E.png"))
+# plt.show()
 
 
-# trained_model = PretrainedModel(pretrained_model="efficientnet_b1", n_outputs=2)
-# trained_model_name = "efficientNet_b1"
-# nr_classes = 2
-# model_path = os.path.join(weights_dir, f"{trained_model_name}_{data_name}.pt")
-# trained_model.load_state_dict(torch.load(model_path, map_location=DEVICE))
+# plt.figure(figsize=(10,5))
+# plt.title(f"Training and Validation Accuracy ({trained_model_name})")
+# plt.plot(val_metrics[:,0], label = "val-acc")
+# plt.plot(train_metrics[:,0], label="train-acc")
+# plt.xlabel("Iterations")
+# plt.ylabel("Accuracy")
+# plt.legend()
+# plt.savefig(os.path.join(trained_models_dir,f"{trained_model_name}_acc_{EPOCHS}E.png"))
+# plt.show()
 
-# test_set = ROSE_Dataset(base_data_path=data_dir, data_split="test", transform=val_transforms)
-# test_loader = torch.utils.data.DataLoader(dataset=test_set, batch_size=BATCH_SIZE, shuffle=True)
 
-# test_losses, test_metrics = test_model(model=trained_model, model_name=trained_model_name, test_loader=test_loader, nr_classes=2, LOSS=LOSS, DEVICE=DEVICE)
+trained_model = PretrainedModel(pretrained_model="efficientnet_b1", n_outputs=2)
+trained_model_name = "efficientNet_b1"
+nr_classes = 2
+model_path = os.path.join(weights_dir, f"{trained_model_name}_{data_name}.pt")
+trained_model.load_state_dict(torch.load(model_path, map_location=DEVICE))
+print(model_path)
+
+
+test_set = ROSE_Dataset(base_data_path=data_dir, data_split="test", transform=val_transforms)
+test_loader = torch.utils.data.DataLoader(dataset=test_set, batch_size=BATCH_SIZE, shuffle=True)
+
+test_losses, test_metrics = test_model(model=trained_model, model_name=trained_model_name, test_loader=test_loader, nr_classes=2, LOSS=LOSS, DEVICE=DEVICE)
