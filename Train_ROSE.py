@@ -38,14 +38,14 @@ np.random.seed(random_seed)
 
 
 # Data Directories
-your_datasets_dir = "/home/up201605633/Desktop"
+your_datasets_dir = "/home/pedro/Desktop"
 data_name = "ROSE"
 attack_type = None
 data_dir = os.path.join(your_datasets_dir, data_name)
 data_dir = os.path.join(data_dir, "data_divided")
 
 #Model Directory
-trained_models_dir = "/home/up201605633/Desktop/trained_models"
+trained_models_dir = "/home/pedro/Desktop/trained_AL_models"
 
 MEAN = [0.485, 0.456, 0.406]
 STD = [0.229, 0.224, 0.225]
@@ -73,7 +73,7 @@ val_transforms = torchvision.transforms.Compose([
 test_toggle = 0
 
 if test_toggle == 0:
-    train_set = ROSE_Dataset(base_data_path=data_dir, data_split="train", attack_type=attack_type, transform=val_transforms)
+    train_set = ROSE_Dataset(base_data_path=data_dir, data_split="train", attack_type=attack_type, transform=val_transforms,transform_orig=val_transforms)
     # Set target train and val sizes
     val_size = 0.2 # portion of the dataset
     num_train = len(train_set)
@@ -92,7 +92,7 @@ if test_toggle == 0:
     #print(f"Number of Validation Images: {len(val_set)} | Label Dict: {val_set.labels_dict}")
 
 if test_toggle==1:
-    train_set = ROSE_Dataset(base_data_path=data_dir, data_split="train", attack_type=attack_type, transform=train_transforms)
+    train_set = ROSE_Dataset(base_data_path=data_dir, data_split="train", attack_type=attack_type, transform=train_transforms,                  transform_orig=val_transforms)
     print(f"Number of Train Images: {len(train_set)} | Label Dict: {train_set.labels_dict}")
     val_set = ROSE_Dataset(base_data_path=data_dir, data_split="test", attack_type=attack_type, transform=val_transforms)
 
@@ -135,11 +135,11 @@ LOSS = torch.nn.CrossEntropyLoss()
 entropy_thresh = 0
 nr_queries = 2
 data_classes = ('0', '1')
+start_epoch = 1
 
-
-# train_losses, train_metrics = active_train_model(model=model, train_loader=train_loader, entropy_thresh=entropy_thresh,
-#                                                      nr_queries=nr_queries, data_classes=data_classes, EPOCHS=EPOCHS, 
-#                                                         DEVICE=DEVICE, LOSS=LOSS)
+val_losses,train_losses,val_metrics,train_metrics = active_train_model(model=model, model_name=model_name, data_name=data_name, train_loader=train_loader, val_loader=val_loader, history_dir=history_dir, weights_dir=weights_dir,
+                                                entropy_thresh=entropy_thresh, nr_queries=nr_queries, data_classes=data_classes, start_epoch = start_epoch, percentage = 1,
+                                                 EPOCHS=EPOCHS, DEVICE=DEVICE, LOSS=LOSS)
 
 
 # val_losses,train_losses,val_metrics,train_metrics = train_model(model=model, model_name=model_name,nr_classes=2,train_loader=train_loader,
@@ -168,15 +168,15 @@ data_classes = ('0', '1')
 # plt.show()
 
 
-trained_model = PretrainedModel(pretrained_model="efficientnet_b1", n_outputs=2)
-trained_model_name = "efficientNet_b1"
-nr_classes = 2
-model_path = os.path.join(weights_dir, f"{trained_model_name}_{data_name}.pt")
-trained_model.load_state_dict(torch.load(model_path, map_location=DEVICE))
-print(model_path)
+#trained_model = PretrainedModel(pretrained_model="efficientnet_b1", n_outputs=2)
+#trained_model_name = "efficientNet_b1"
+#nr_classes = 2
+#model_path = os.path.join(weights_dir, f"{trained_model_name}_{data_name}.pt")
+#trained_model.load_state_dict(torch.load(model_path, map_location=DEVICE))
+#print(model_path)
 
 
-test_set = ROSE_Dataset(base_data_path=data_dir, data_split="test", transform=val_transforms)
-test_loader = torch.utils.data.DataLoader(dataset=test_set, batch_size=BATCH_SIZE, shuffle=True)
+#test_set = ROSE_Dataset(base_data_path=data_dir, data_split="test", transform=val_transforms)
+#test_loader = torch.utils.data.DataLoader(dataset=test_set, batch_size=BATCH_SIZE, shuffle=True)
 
-test_losses, test_metrics = test_model(model=trained_model, model_name=trained_model_name, test_loader=test_loader, nr_classes=2, LOSS=LOSS, DEVICE=DEVICE)
+#test_losses, test_metrics = test_model(model=trained_model, model_name=trained_model_name, test_loader=test_loader, nr_classes=2, LOSS=LOSS, DEVICE=DEVICE)

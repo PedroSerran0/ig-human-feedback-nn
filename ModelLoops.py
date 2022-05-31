@@ -23,7 +23,7 @@ from xAI_utils import takeThird
 from xAI_utils import GenerateDeepLiftAtts
 from choose_rects import GetOracleFeedback
 
-HITL_LAMBDA = 1
+HITL_LAMBDA = 1e6
 
 def my_loss(Ypred, X, W):
     # it "works" with both retain_graph=True and create_graph=True, but I think
@@ -95,10 +95,14 @@ def active_train_model(model, model_name, data_name, train_loader, val_loader, h
             inter_loss = loss
             images_og.requires_grad = True
             logits = model(images_og)
-            loss += my_loss(logits, images_og, W[indices])
-
-            print(f"The cross entropy loss is {inter_loss}")
-            print(f"The custom imposed loss is : {loss-inter_loss}")
+            custom_loss = my_loss(logits, images_og, W[indices])*HITL_LAMBDA
+            loss += custom_loss
+            
+            
+            if (epoch >= start_epoch):
+                print(f"Cross entropy loss: {inter_loss}")
+                print(f"Loss After AL: {loss} ")
+                print(f"Custom imposed loss: {custom_loss}")
 
             # Backward pass: compute gradient of the loss with respect to model parameters
             loss.backward()
@@ -183,7 +187,7 @@ def active_train_model(model, model_name, data_name, train_loader, val_loader, h
                 deepLiftAtts = torch.tensor(deepLiftAtts)
                 print(deepLiftAtts.shape)
 
-                __,selectedRectangles = GetOracleFeedback(query_image.detach().cpu().numpy(), deepLiftAtts, rectSize=28, rectStride=28, nr_rects=5)
+                __,selectedRectangles = GetOracleFeedback(query_image.detach().cpu().numpy(), deepLiftAtts, rectSize=28, rectStride=28, nr_rects=10)
                 print(selectedRectangles)
 
                 # change the weights W=1 in the selected rectangles area
@@ -225,6 +229,7 @@ def active_train_model(model, model_name, data_name, train_loader, val_loader, h
                 #img1 = img1.save(f'/home/up201605633/Desktop/AL_debug/X-{epoch}-{j}.png')
                 
                 #img2 = transf(W[j])
+                #plt.imshow(img2)
                 #img2 = img2.save(f'/home/up201605633/Desktop/AL_debug/W-{epoch}-{j}.png')
                 
         # Validation Loop
@@ -340,7 +345,7 @@ def train_model(model, model_name, train_loader, val_loader, history_dir, weight
     img_width = 224
 
     # Hyper-parameters
-    LEARNING_RATE = 1e-6
+    LEARNING_RATE = 1e-4
     OPTIMISER = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)
     BATCH_SIZE = 2
 

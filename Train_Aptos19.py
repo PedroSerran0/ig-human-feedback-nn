@@ -43,13 +43,13 @@ np.random.seed(random_seed)
 
 
 # Data Directories
-your_datasets_dir = "/home/up201605633/Desktop"
+your_datasets_dir = "/home/pedro/Desktop"
 data_name = "Aptos2019"
 data_dir = os.path.join(your_datasets_dir, data_name)
 
 
 #Model Directory
-trained_models_dir = "/home/up201605633/Desktop/trained_AL_models"
+trained_models_dir = "/home/pedro/Desktop/trained_AL_models"
 
 # train data
 train_dir = os.path.join(data_dir, "train")
@@ -76,8 +76,8 @@ val_transforms = torchvision.transforms.Compose([
 ])
 
 # Load and count data samples
-train_fraction = 0.01
-val_fraction = 0.5
+train_fraction = 0.1
+val_fraction = 1
 
 # Train Dataset
 train_set = Aptos19_Dataset(base_data_path=train_dir, label_file=train_label_file, transform=train_transforms, transform_orig=val_transforms, split='train', fraction = train_fraction)
@@ -89,7 +89,7 @@ print(f"Number of Total Validation Images: {len(val_set)} | Label Dict: {val_set
 
 
 # get batch and build loaders
-BATCH_SIZE = 1
+BATCH_SIZE = 10
 train_loader = torch.utils.data.DataLoader(dataset=train_set, batch_size=BATCH_SIZE, shuffle=True, num_workers=4)
 val_loader = torch.utils.data.DataLoader(dataset=val_set, batch_size=BATCH_SIZE, shuffle=True, num_workers=4)
 
@@ -115,23 +115,23 @@ if not os.path.isdir(history_dir):
 DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
 
 # Hyper-parameters
-EPOCHS = 3
+EPOCHS = 31
 LOSS = torch.nn.CrossEntropyLoss()
 
 # Active Learning parameters
 entropy_thresh = 0
-nr_queries = 5
+nr_queries = 10
 data_classes = ('0', '1', '2', '3', '4')
-start_epoch = 1
+start_epoch = 15
 percentage = train_fraction*100
 
-val_losses,train_losses,val_metrics,train_metrics = active_train_model(model=model, model_name=model_name, data_name=data_name, train_loader=train_loader, val_loader=val_loader, history_dir=history_dir, weights_dir=weights_dir,
-                                                entropy_thresh=entropy_thresh, nr_queries=nr_queries, data_classes=data_classes, start_epoch = start_epoch, percentage = 1,
-                                                 EPOCHS=EPOCHS, DEVICE=DEVICE, LOSS=LOSS)
+#val_losses,train_losses,val_metrics,train_metrics = active_train_model(model=model, model_name=model_name, data_name=data_name, train_loader=train_loader, val_loader=val_loader, history_dir=history_dir, weights_dir=weights_dir,
+#                                                entropy_thresh=entropy_thresh, nr_queries=nr_queries, data_classes=data_classes, start_epoch = start_epoch, percentage = percentage,
+#                                                 EPOCHS=EPOCHS, DEVICE=DEVICE, LOSS=LOSS)
 
-# val_losses,train_losses,val_metrics,train_metrics = train_model(model=model, model_name=model_name,nr_classes=5,train_loader=train_loader,
-#                  val_loader=val_loader, history_dir=history_dir, weights_dir=weights_dir, data_name=data_name,
-#                     LOSS=LOSS, EPOCHS=EPOCHS, DEVICE=DEVICE, percentage=percentage)
+val_losses,train_losses,val_metrics,train_metrics = train_model(model=model, model_name=model_name,nr_classes=5,train_loader=train_loader,
+                  val_loader=val_loader, history_dir=history_dir, weights_dir=weights_dir, data_name=data_name,
+                     LOSS=LOSS, EPOCHS=EPOCHS, DEVICE=DEVICE, percentage=percentage)
 
 
 plt.figure(figsize=(10,5))
