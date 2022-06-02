@@ -23,7 +23,7 @@ from xAI_utils import takeThird
 from xAI_utils import GenerateDeepLiftAtts
 from choose_rects import GetOracleFeedback
 
-HITL_LAMBDA = 1e6
+HITL_LAMBDA = 1e7
 
 def my_loss(Ypred, X, W):
     # it "works" with both retain_graph=True and create_graph=True, but I think
@@ -36,7 +36,7 @@ def my_loss(Ypred, X, W):
 def active_train_model(model, model_name, data_name, train_loader, val_loader, history_dir, weights_dir, entropy_thresh, nr_queries, start_epoch, data_classes, EPOCHS, DEVICE, LOSS, percentage=100):
     
     # Hyper-parameters
-    LEARNING_RATE = 1e-4
+    LEARNING_RATE = 1e-6
     OPTIMISER = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)
 
     # Initialise min_train and min_val loss trackers
