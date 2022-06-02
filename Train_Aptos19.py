@@ -115,23 +115,37 @@ if not os.path.isdir(history_dir):
 DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
 
 # Hyper-parameters
-EPOCHS = 31
+EPOCHS = 20
 LOSS = torch.nn.CrossEntropyLoss()
 
 # Active Learning parameters
 entropy_thresh = 0
-nr_queries = 10
+nr_queries = 20
 data_classes = ('0', '1', '2', '3', '4')
-start_epoch = 15
+start_epoch = 1
 percentage = train_fraction*100
 
 #val_losses,train_losses,val_metrics,train_metrics = active_train_model(model=model, model_name=model_name, data_name=data_name, train_loader=train_loader, val_loader=val_loader, history_dir=history_dir, weights_dir=weights_dir,
 #                                                entropy_thresh=entropy_thresh, nr_queries=nr_queries, data_classes=data_classes, start_epoch = start_epoch, percentage = percentage,
 #                                                 EPOCHS=EPOCHS, DEVICE=DEVICE, LOSS=LOSS)
 
-val_losses,train_losses,val_metrics,train_metrics = train_model(model=model, model_name=model_name,nr_classes=5,train_loader=train_loader,
-                  val_loader=val_loader, history_dir=history_dir, weights_dir=weights_dir, data_name=data_name,
-                     LOSS=LOSS, EPOCHS=EPOCHS, DEVICE=DEVICE, percentage=percentage)
+# val_losses,train_losses,val_metrics,train_metrics = train_model(model=model, model_name=model_name,nr_classes=5,train_loader=train_loader,
+#                   val_loader=val_loader, history_dir=history_dir, weights_dir=weights_dir, data_name=data_name,
+#                      LOSS=LOSS, EPOCHS=EPOCHS, DEVICE=DEVICE, percentage=percentage)
+
+
+# Load and Retrain
+trained_model = PretrainedModel(pretrained_model="efficientnet_b1", n_outputs=5)
+trained_model_name = "efficientNet_b1_200retrained"
+nr_classes = 5
+model_path = "/home/up201605633/Desktop/trained_models/efficientNetB1_Aptos2019/weights/efficientNetB1_Aptos2019.pt"
+trained_model.load_state_dict(torch.load(model_path, map_location=DEVICE))
+
+
+
+val_losses,train_losses,val_metrics,train_metrics = active_train_model(model=trained_model, model_name=trained_model_name, data_name=data_name, train_loader=train_loader, val_loader=val_loader, history_dir=history_dir, weights_dir=weights_dir,
+                                               entropy_thresh=entropy_thresh, nr_queries=nr_queries, data_classes=data_classes, start_epoch = start_epoch, percentage = 100,
+                                                EPOCHS=EPOCHS, DEVICE=DEVICE, LOSS=LOSS)
 
 
 plt.figure(figsize=(10,5))
@@ -159,3 +173,5 @@ print("plot saved")
 # plt.show()
 
 # print("accuracy plot saved")
+
+
