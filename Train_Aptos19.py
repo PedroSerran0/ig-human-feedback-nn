@@ -125,13 +125,13 @@ data_classes = ('0', '1', '2', '3', '4')
 start_epoch = 15
 percentage = train_fraction*100
 
-#val_losses,train_losses,val_metrics,train_metrics = active_train_model(model=model, model_name=model_name, data_name=data_name, train_loader=train_loader, val_loader=val_loader, history_dir=history_dir, weights_dir=weights_dir,
-#                                                entropy_thresh=entropy_thresh, nr_queries=nr_queries, data_classes=data_classes, start_epoch = start_epoch, percentage = percentage,
-#                                                 EPOCHS=EPOCHS, DEVICE=DEVICE, LOSS=LOSS)
+val_losses,train_losses,val_metrics,train_metrics = active_train_model(model=model, model_name=model_name, data_name=data_name, train_loader=train_loader, val_loader=val_loader, history_dir=history_dir, weights_dir=weights_dir,
+                                                entropy_thresh=entropy_thresh, nr_queries=nr_queries, data_classes=data_classes, start_epoch = start_epoch, percentage = percentage,
+                                                 EPOCHS=EPOCHS, DEVICE=DEVICE, LOSS=LOSS)
 
-val_losses,train_losses,val_metrics,train_metrics = train_model(model=model, model_name=model_name,nr_classes=5,train_loader=train_loader,
-                  val_loader=val_loader, history_dir=history_dir, weights_dir=weights_dir, data_name=data_name,
-                     LOSS=LOSS, EPOCHS=EPOCHS, DEVICE=DEVICE, percentage=percentage)
+#val_losses,train_losses,val_metrics,train_metrics = train_model(model=model, model_name=model_name,nr_classes=5,train_loader=train_loader,
+#                  val_loader=val_loader, history_dir=history_dir, weights_dir=weights_dir, data_name=data_name,
+#                     LOSS=LOSS, EPOCHS=EPOCHS, DEVICE=DEVICE, percentage=percentage)
 
 
 plt.figure(figsize=(10,5))
