@@ -23,12 +23,12 @@ from xAI_utils import takeThird
 from xAI_utils import GenerateDeepLiftAtts
 from choose_rects import GetOracleFeedback
 
-HITL_LAMBDA = 1e7
+HITL_LAMBDA = 1e6
 
 def my_loss(Ypred, X, W):
     # it "works" with both retain_graph=True and create_graph=True, but I think
     # the latter is what we want
-    grad = torch.autograd.grad(Ypred.sum(), X, create_graph=True)[0]
+    grad = torch.autograd.grad(Ypred.sum(), X, retain_graph=True)[0]
     # grad has a shape: torch.Size([256, 3, 32, 32])
     return (W *(grad**2).mean(1)).mean()
 
@@ -36,7 +36,7 @@ def my_loss(Ypred, X, W):
 def active_train_model(model, model_name, data_name, train_loader, val_loader, history_dir, weights_dir, entropy_thresh, nr_queries, start_epoch, data_classes, EPOCHS, DEVICE, LOSS, percentage=100):
     
     # Hyper-parameters
-    LEARNING_RATE = 1e-6
+    LEARNING_RATE = 1e-4
     OPTIMISER = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)
 
     # Initialise min_train and min_val loss trackers
@@ -99,10 +99,10 @@ def active_train_model(model, model_name, data_name, train_loader, val_loader, h
             loss += custom_loss
             
             
-            if (epoch >= start_epoch):
-                print(f"Cross entropy loss: {inter_loss}")
-                print(f"Loss After AL: {loss} ")
-                print(f"Custom imposed loss: {custom_loss}")
+#            if (epoch >= start_epoch):
+#                print(f"Cross entropy loss: {inter_loss}")
+#                print(f"Loss After AL: {loss} ")
+#                print(f"Custom imposed loss: {custom_loss}")
 
             # Backward pass: compute gradient of the loss with respect to model parameters
             loss.backward()
@@ -179,7 +179,9 @@ def active_train_model(model, model_name, data_name, train_loader, val_loader, h
                 print(high_entropy_pred[i][2]) 
                 query_image = high_entropy_pred[i][0]
                 query_index = high_entropy_pred[i][4]
-                deepLiftAtts = GenerateDeepLiftAtts(image=query_image, label=high_entropy_pred[i][1], model = model, data_classes=data_classes)
+                image_index = high_entropy_pred[i][3]
+                query_label = high_entropy_pred[i][1]
+                deepLiftAtts, query_pred = GenerateDeepLiftAtts(image=query_image, label=query_label, model = model, data_classes=data_classes)
 
                 # Aggregate along color channels and normalize to [-1, 1]
                 deepLiftAtts = deepLiftAtts.sum(axis=np.argmax(np.asarray(deepLiftAtts.shape) == 3))
@@ -187,7 +189,7 @@ def active_train_model(model, model_name, data_name, train_loader, val_loader, h
                 deepLiftAtts = torch.tensor(deepLiftAtts)
                 print(deepLiftAtts.shape)
 
-                __,selectedRectangles = GetOracleFeedback(query_image.detach().cpu().numpy(), deepLiftAtts, rectSize=28, rectStride=28, nr_rects=10)
+                __,selectedRectangles = GetOracleFeedback(image=query_image.detach().cpu().numpy(), label=query_label, idx=image_index, model_attributions=deepLiftAtts, pred=query_pred, rectSize=28, rectStride=28, nr_rects=10)
                 print(selectedRectangles)
 
                 # change the weights W=1 in the selected rectangles area
@@ -322,7 +324,7 @@ def active_train_model(model, model_name, data_name, train_loader, val_loader, h
                 print("Saving best model on validation...")
 
                 # Save checkpoint
-                model_path = os.path.join(weights_dir, f"{model_name}_{data_name}_AL_{percentage}.pt")
+                model_path = os.path.join(weights_dir, f"{model_name}_{data_name}_AL_{percentage}p_{EPOCHS}e.pt")
                 torch.save(model.state_dict(), model_path)
 
                 print(f"Successfully saved at: {model_path}")
@@ -385,7 +387,7 @@ def train_model(model, model_name, train_loader, val_loader, history_dir, weight
 
 
         # Iterate through dataloader
-        for batch_idx, (images, images_og, labels, indices) in enumerate(train_loader):
+        for batch_idx, (images, images_og, labels, indices) in enumerate(tqdm(train_loader)):
 
             # Move data data anda model to GPU (or not)
             images, labels = images.to(DEVICE), labels.to(DEVICE)
@@ -486,7 +488,7 @@ def train_model(model, model_name, train_loader, val_loader, history_dir, weight
         with torch.no_grad():
 
             # Iterate through dataloader
-            for batch_idx, (images, images_og, labels, indices) in enumerate(val_loader):
+            for batch_idx, (images, images_og, labels, indices) in enumerate(tqdm(val_loader)):
 
                 # Move data data anda model to GPU (or not)
                 images, labels = images.to(DEVICE), labels.to(DEVICE)
@@ -556,7 +558,7 @@ def train_model(model, model_name, train_loader, val_loader, history_dir, weight
                 print("Saving best model on validation...")
 
                 # Save checkpoint
-                model_path = os.path.join(weights_dir, f"{model_name}_{data_name}_{percentage}.pt")
+                model_path = os.path.join(weights_dir, f"{model_name}_{data_name}_{percentage}p_{EPOCHS}e.pt")
                 torch.save(model.state_dict(), model_path)
 
                 print(f"Successfully saved at: {model_path}")

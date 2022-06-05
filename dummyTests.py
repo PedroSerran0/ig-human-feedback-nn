@@ -38,50 +38,52 @@ x3 = [200,203,250,260,270,280,290,305,670,320]
 
 plt.figure(figsize=(10,5))
 plt.title(f"Training and Validation Loss (_AL)")
-plt.plot(x1,label="train-loss")
+plt.plot(x1,label="train-loss", linestyle='--')
 plt.plot(x2,label="val-loss")
 plt.plot(x3,label="train-loss")
 plt.xlabel("Iterations")
 plt.ylabel("Loss")
 plt.legend()
 #plt.savefig(os.path.join(trained_models_dir,f"{trained_model_name}_loss_{EPOCHS}E_AL.png"))
-plt.show()
+#plt.show()
 
-transf = transforms.ToPILImage()
-img1 = transf(myTensor)
-img1 = img1.save("/home/up201605633/Desktop/tensor2.jpg")
+ahah = torch.tensor([2])
+print(int(ahah[0]))
+#transf = transforms.ToPILImage()
+#img1 = transf(myTensor)
+#img1 = img1.save("/home/up201605633/Desktop/tensor2.jpg")
 
-probs = torch.softmax(myTensor,1)
+#probs = torch.softmax(myTensor,1)
 
-myList = list()
+#myList = list()
 
-a = ["a","a",1.2]
-b=["b","a",1.6]
-c=["c","a",0.9]
-d=["d","a",1.4]
-myList.append(a)
-myList.append(b)
-myList.append(c)
-myList.append(d)
-#print(myList)
-#print(myList[0][2])
+#a = ["a","a",1.2]
+#b=["b","a",1.6]
+#c=["c","a",0.9]
+#d=["d","a",1.4]
+#myList.append(a)
+#myList.append(b)
+#myList.append(c)
+#myList.append(d)
+##print(myList)
+##print(myList[0][2])
 
-def getMaxEntropyImage(data_list):
-        for data_point in data_list:
-                maxvalue = 0
-                for i in range(len(data_list)):
-                        entNum = data_list[i][2]
-                        if(entNum > maxvalue):
-                                maxvalue = entNum
-                                maxEntropyImage = data_list[i]
-        return maxEntropyImage 
+#def getMaxEntropyImage(data_list):
+#        for data_point in data_list:
+#                maxvalue = 0
+#                for i in range(len(data_list)):
+#                        entNum = data_list[i][2]
+#                        if(entNum > maxvalue):
+#                                maxvalue = entNum
+#                                maxEntropyImage = data_list[i]
+#        return maxEntropyImage 
 
-# take second element for sort
-def takeInt(elem):
-    return elem[2]
+## take second element for sort
+#def takeInt(elem):
+#    return elem[2]
 
-myList.sort(key=takeInt, reverse=True)
-print(myList[1][2])
+#myList.sort(key=takeInt, reverse=True)
+#print(myList[1][2])
 
 # df = pd.DataFrame(myList, columns = ['Column_A','Column_B','Column_C'])
 

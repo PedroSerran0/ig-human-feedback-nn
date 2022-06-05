@@ -96,7 +96,7 @@ def imshow(img ,transpose = True):
     plt.imshow(np.transpose(img, (1, 2, 0)))
     plt.show()
 
-def GetOracleFeedback(image, model_attributions, rectSize, rectStride, nr_rects):
+def GetOracleFeedback(image, label, idx, model_attributions, pred, rectSize, rectStride, nr_rects):
     rectGenerator = GenerateRectangles(model_attributions, size=rectSize, stride=rectStride, nr_rects=nr_rects)
     rects = rectGenerator.get_ranked_patches()
     image = image / 2 + 0.5     # unnormalize
@@ -105,6 +105,7 @@ def GetOracleFeedback(image, model_attributions, rectSize, rectStride, nr_rects)
     
     ui = ChooseRectangles(image,rects)
     ui.draw()
+    plt.title(f"True Label: {label}  Prediction: {pred}  Image idx: {idx}")
     plt.show()
     print(ui.selected)
     selected_rects = ui.get_selected_rectangles()

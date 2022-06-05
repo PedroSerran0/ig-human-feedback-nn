@@ -49,7 +49,7 @@ data_dir = os.path.join(your_datasets_dir, data_name)
 
 
 #Model Directory
-trained_models_dir = "/home/pedro/Desktop/trained_AL_models"
+trained_models_dir = "/home/pedro/Desktop/retrained_models"
 
 # train data
 train_dir = os.path.join(data_dir, "train")
@@ -89,7 +89,7 @@ print(f"Number of Total Validation Images: {len(val_set)} | Label Dict: {val_set
 
 
 # get batch and build loaders
-BATCH_SIZE = 10
+BATCH_SIZE = 4
 train_loader = torch.utils.data.DataLoader(dataset=train_set, batch_size=BATCH_SIZE, shuffle=True, num_workers=4)
 val_loader = torch.utils.data.DataLoader(dataset=val_set, batch_size=BATCH_SIZE, shuffle=True, num_workers=4)
 
@@ -125,45 +125,46 @@ data_classes = ('0', '1', '2', '3', '4')
 start_epoch = 1
 percentage = train_fraction*100
 
-val_losses,train_losses,val_metrics,train_metrics = active_train_model(model=model, model_name=model_name, data_name=data_name, train_loader=train_loader, val_loader=val_loader, history_dir=history_dir, weights_dir=weights_dir,
-                                                entropy_thresh=entropy_thresh, nr_queries=nr_queries, data_classes=data_classes, start_epoch = start_epoch, percentage = percentage,
-                                                 EPOCHS=EPOCHS, DEVICE=DEVICE, LOSS=LOSS)
+#val_losses,train_losses,val_metrics,train_metrics = active_train_model(model=model, model_name=model_name, data_name=data_name, train_loader=train_loader, val_loader=val_loader, history_dir=history_dir, weights_dir=weights_dir,
+#                                                entropy_thresh=entropy_thresh, nr_queries=nr_queries, data_classes=data_classes, start_epoch = start_epoch, percentage = percentage,
+#                                                 EPOCHS=EPOCHS, DEVICE=DEVICE, LOSS=LOSS)
 
-<<<<<<< HEAD
+
 #val_losses,train_losses,val_metrics,train_metrics = train_model(model=model, model_name=model_name,nr_classes=5,train_loader=train_loader,
 #                  val_loader=val_loader, history_dir=history_dir, weights_dir=weights_dir, data_name=data_name,
 #                     LOSS=LOSS, EPOCHS=EPOCHS, DEVICE=DEVICE, percentage=percentage)
-=======
-# val_losses,train_losses,val_metrics,train_metrics = train_model(model=model, model_name=model_name,nr_classes=5,train_loader=train_loader,
-#                   val_loader=val_loader, history_dir=history_dir, weights_dir=weights_dir, data_name=data_name,
-#                      LOSS=LOSS, EPOCHS=EPOCHS, DEVICE=DEVICE, percentage=percentage)
 
 
-# Load and Retrain
+
+
+#Load and Retrain
 trained_model = PretrainedModel(pretrained_model="efficientnet_b1", n_outputs=5)
-trained_model_name = "efficientNet_b1_200retrained"
+trained_model_name = "efficientNet_b1_10E_retrained"
 nr_classes = 5
-model_path = "/home/up201605633/Desktop/trained_models/efficientNetB1_Aptos2019/weights/efficientNetB1_Aptos2019.pt"
+model_path = "/home/pedro/Desktop/trained_models/efficientNet_b1_Aptos2019/weights/efficientNet_b1_Aptos2019_10.0p_10e.pt"
 trained_model.load_state_dict(torch.load(model_path, map_location=DEVICE))
 
 
 
 val_losses,train_losses,val_metrics,train_metrics = active_train_model(model=trained_model, model_name=trained_model_name, data_name=data_name, train_loader=train_loader, val_loader=val_loader, history_dir=history_dir, weights_dir=weights_dir,
-                                               entropy_thresh=entropy_thresh, nr_queries=nr_queries, data_classes=data_classes, start_epoch = start_epoch, percentage = 100,
+                                               entropy_thresh=entropy_thresh, nr_queries=nr_queries, data_classes=data_classes, start_epoch = start_epoch, percentage = percentage,
                                                 EPOCHS=EPOCHS, DEVICE=DEVICE, LOSS=LOSS)
->>>>>>> 375fdcea582c4c4f5f0ddca0e29b97c1a3f27344
+
+#val_losses,train_losses,val_metrics,train_metrics = train_model(model=trained_model, model_name=trained_model_name,nr_classes=5,train_loader=train_loader,
+#                  val_loader=val_loader, history_dir=history_dir, weights_dir=weights_dir, data_name=data_name,
+#                     LOSS=LOSS, EPOCHS=EPOCHS, DEVICE=DEVICE, percentage=percentage)
 
 
 plt.figure(figsize=(10,5))
-plt.title(f"Training and Validation Metrics ({trained_model_name}__{percentage}%)")
-plt.plot(val_losses,label="val-loss")
+plt.title(f"Training and Validation Metrics ({trained_model_name}_AL_{percentage}%)")
+plt.plot(val_losses,label="val-loss", linestyle='--')
 plt.plot(train_losses,label="train-loss")
-plt.plot(val_metrics[:,0], label = "val-acc")
+plt.plot(val_metrics[:,0], label = "val-acc", linestyle='--')
 plt.plot(train_metrics[:,0], label="train-acc")
 plt.xlabel("Iterations")
 plt.ylabel("Metrics")
 plt.legend()
-plt.savefig(os.path.join(trained_models_dir,f"{trained_model_name}_metrics_{EPOCHS}E__{percentage}.png"))
+plt.savefig(os.path.join(trained_models_dir,f"{trained_model_name}_metrics_{EPOCHS}E__{percentage}p.png"))
 plt.show()
 
 print("plot saved")
