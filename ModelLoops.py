@@ -72,6 +72,7 @@ def active_train_model(model, model_name, data_name, train_loader, val_loader, h
 
         # Running train loss
         run_train_loss = 0.0
+        vanilla_run_train_loss = 0.0
 
 
         # Put model in training mode
@@ -92,7 +93,7 @@ def active_train_model(model, model_name, data_name, train_loader, val_loader, h
             logits = model(images)
             loss = LOSS(logits, labels)
 
-            inter_loss = loss
+            vanilla_loss = loss.item()
             images_og.requires_grad = True
             logits = model(images_og)
             custom_loss = my_loss(logits, images_og, W[indices])*HITL_LAMBDA
@@ -100,7 +101,7 @@ def active_train_model(model, model_name, data_name, train_loader, val_loader, h
             
             
 #            if (epoch >= start_epoch):
-#                print(f"Cross entropy loss: {inter_loss}")
+#                print(f"Cross entropy loss: {vanilla_run_train_loss}")
 #                print(f"Loss After AL: {loss} ")
 #                print(f"Custom imposed loss: {custom_loss}")
 
@@ -138,6 +139,7 @@ def active_train_model(model, model_name, data_name, train_loader, val_loader, h
             
             # Update batch losses
             run_train_loss += (loss.item() * images.size(0))
+            vanilla_run_train_loss += (vanilla_loss*images.size(0))
 
             # Concatenate lists
             y_train_true += list(labels.cpu().detach().numpy())
@@ -151,6 +153,7 @@ def active_train_model(model, model_name, data_name, train_loader, val_loader, h
         
         # Compute Average Train Loss
         avg_train_loss = run_train_loss/len(train_loader.dataset)
+        vanilla_avg_train_loss = vanilla_run_train_loss/len(train_loader.dataset)
 
         # Compute Train Metrics
         train_acc = accuracy_score(y_true=y_train_true, y_pred=y_train_pred)
@@ -199,11 +202,11 @@ def active_train_model(model, model_name, data_name, train_loader, val_loader, h
                     W[query_index, rect[1]:rect[3], rect[0]:rect[2]] = 1
 
         # Print Statistics
-        print(f"Train Loss: {avg_train_loss}\tTrain Accuracy: {train_acc}")
+        print(f"Train Loss: {vanilla_avg_train_loss}\tTrain Accuracy: {train_acc}")
 
         # Append values to the arrays
         # Train Loss
-        train_losses[epoch] = avg_train_loss
+        train_losses[epoch] = vanilla_avg_train_loss
         
         # Train Metrics
         # Acc
@@ -217,9 +220,9 @@ def active_train_model(model, model_name, data_name, train_loader, val_loader, h
 
         # Update Variables
         # Min Training Loss
-        if avg_train_loss < min_train_loss:
+        if vanilla_avg_train_loss < min_train_loss:
             print(f"Train loss decreased from {min_train_loss} to {avg_train_loss}.")
-            min_train_loss = avg_train_loss
+            min_train_loss = vanilla_avg_train_loss
 
         # DEBUG
         transf = transforms.ToPILImage()

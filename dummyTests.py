@@ -38,14 +38,14 @@ x3 = [200,203,250,260,270,280,290,305,670,320]
 
 plt.figure(figsize=(10,5))
 plt.title(f"Training and Validation Loss (_AL)")
-plt.plot(x1,label="train-loss", linestyle='--')
-plt.plot(x2,label="val-loss")
-plt.plot(x3,label="train-loss")
+plt.plot(x1,label="train-loss", linestyle='--', color="red")
+plt.plot(x2,label="val-loss", color="green")
+plt.plot(x3,label="train-loss", color="green")
 plt.xlabel("Iterations")
 plt.ylabel("Loss")
 plt.legend()
 #plt.savefig(os.path.join(trained_models_dir,f"{trained_model_name}_loss_{EPOCHS}E_AL.png"))
-#plt.show()
+plt.show()
 
 ahah = torch.tensor([2])
 print(int(ahah[0]))

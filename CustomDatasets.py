@@ -153,7 +153,7 @@ def ISIC_map_images_and_labels(data_dir, label_file):
     
 # Create a Dataset Class
 class ISIC17_Dataset(Dataset):
-    def __init__(self, base_data_path, label_file, transform=None):
+    def __init__(self, base_data_path, label_file, transform=None, transform_orig=None, fraction=1):
         """
         Args:
             base_data_path (string): Data directory.
@@ -168,6 +168,14 @@ class ISIC17_Dataset(Dataset):
         imgs_labels, self.labels_dict, self.nr_classes = ISIC_map_images_and_labels(base_data_path, label_file)
         self.images_paths, self.images_labels = imgs_labels[:, 0], imgs_labels[:, 1]
         self.transform = transform
+        self.transform_orig = transform_orig
+        
+        # get desired fraction of data
+        data_size = len(imgs_labels)
+        target_size = round(fraction * data_size)
+        imgs_labels = imgs_labels[0:(target_size-1)]
+
+        self.images_paths, self.images_labels = imgs_labels[:, 0], imgs_labels[:, 1]
 
 
         return 
@@ -199,7 +207,7 @@ class ISIC17_Dataset(Dataset):
         #image = np.concatenate((image, image, image), axis=2)
 
         # Load image with PIL
-        image = Image.fromarray(image)
+        image = image_orig = Image.fromarray(image)
 
         # Get labels
         label = self.labels_dict[self.images_labels[idx]]
@@ -207,9 +215,11 @@ class ISIC17_Dataset(Dataset):
         # Apply transformation
         if self.transform:
             image = self.transform(image)
+        if self.transform_orig:
+            image_orig = self.transform_orig(image_orig)
 
-
-        return image, label
+        #print(img_name, idx)
+        return image, image_orig, label, idx
 
 #=====================================================================================================
 #======================================= Aptos 2019 ==================================================

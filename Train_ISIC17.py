@@ -17,6 +17,7 @@ import torch.optim as optim
 
 # My Imports
 from ModelLoops import train_model
+from ModelLoops import active_train_model
 from CustomDatasets import ISIC17_Dataset
 from ModelArchitectures import PretrainedModel
 
@@ -27,12 +28,12 @@ device = f"cuda:{GPU_TO_USE}" if torch.cuda.is_available() else "cpu"
 print("DEVICE:", device)
 
 # Data Directories
-your_datasets_dir = "/home/up201605633/Desktop"
+your_datasets_dir = "/home/pedro/Desktop"
 data_dir = os.path.join(your_datasets_dir, "ISIC17")
 data_name = "ISIC17"
 
 #Model Directory
-trained_models_dir = "/home/up201605633/Desktop/trained_models"
+trained_models_dir = "/home/pedro/Desktop/trained_AL_models"
 
 # train data
 train_dir = os.path.join(data_dir, "train")
@@ -64,74 +65,129 @@ val_transforms = torchvision.transforms.Compose([
 ])
 
 # Load and count data samples
+train_fraction = 0.01
+val_fraction = 1
+
+# Load and count data samples
 # Train Dataset
-train_set = ISIC17_Dataset(base_data_path=train_dir, label_file=train_label_file, transform=train_transforms)
+train_set = ISIC17_Dataset(base_data_path=train_dir, label_file=train_label_file, transform=train_transforms, transform_orig=val_transforms, fraction=train_fraction)
 print(f"Number of Train Images: {len(train_set)} | Label Dict: {train_set.labels_dict}")
 
 # Validation
-val_set = ISIC17_Dataset(base_data_path=val_dir, label_file=val_label_file, transform=val_transforms)
+val_set = ISIC17_Dataset(base_data_path=val_dir, label_file=val_label_file, transform=val_transforms, transform_orig=val_transforms,fraction=val_fraction)
 print(f"Number of Validation Images: {len(val_set)} | Label Dict: {val_set.labels_dict}")
 
 # get batch and build loaders
-BATCH_SIZE = 10
+BATCH_SIZE = 1
 
-train_loader = torch.utils.data.DataLoader(dataset=train_set, batch_size=BATCH_SIZE, shuffle=True)
-val_loader = torch.utils.data.DataLoader(dataset=val_set, batch_size=BATCH_SIZE, shuffle=True)
+train_loader = torch.utils.data.DataLoader(dataset=train_set, batch_size=BATCH_SIZE, shuffle=True, num_workers=4)
+val_loader = torch.utils.data.DataLoader(dataset=val_set, batch_size=BATCH_SIZE, shuffle=True, num_workers=4)
 
 # Fix Random Seeds
 random_seed = 42
 torch.manual_seed(random_seed)
 np.random.seed(random_seed)
 
-# Set resNet50 path
-resNet50_dir = os.path.join(trained_models_dir, "denseNet121_ISIC17")
+nr_classes = 2
+model = PretrainedModel(pretrained_model="efficientnet_b1", n_outputs=2)
+model_name = "efficientNet_b1"
+
+# Set model path
+trained_model_name = f"{model_name}_{data_name}"
+model_dir = os.path.join(trained_models_dir, trained_model_name)
 
 # Results and Weights
-weights_dir = os.path.join(resNet50_dir, "weights")
+weights_dir = os.path.join(model_dir, "weights")
 if not os.path.isdir(weights_dir):
     os.makedirs(weights_dir)
 
 
 # History Files
-history_dir = os.path.join(resNet50_dir, "history")
+history_dir = os.path.join(model_dir, "history")
 if not os.path.isdir(history_dir):
     os.makedirs(history_dir)
     
 # Choose GPU
 DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
 
-nr_classes = 2
-model = PretrainedModel(pretrained_model="densenet121", n_outputs=2)
-model_name = "denseNet121"
 
 # Hyper-parameters
-EPOCHS = 200
-class_weight = torch.tensor([1/(2*0.8), 1/(2*0.2)])  # passar para parametro
-class_weight = class_weight.to(DEVICE)
-LOSS = torch.nn.CrossEntropyLoss(weight=class_weight)
-#LOSS = torch.nn.CrossEntropyLoss()
+EPOCHS = 20
+# Active Learning parameters
+entropy_thresh = 0
+nr_queries = 15
+data_classes = ('0', '1')
+start_epoch = 2
+percentage = train_fraction*100
+#class_weight = torch.tensor([1/(2*0.8), 1/(2*0.2)])  # passar para parametro
+#class_weight = class_weight.to(DEVICE)
+#LOSS = torch.nn.CrossEntropyLoss(weight=class_weight)
+LOSS = torch.nn.CrossEntropyLoss()
 
-val_losses,train_losses,val_metrics,train_metrics = train_model(model=model, model_name=model_name,nr_classes=nr_classes,train_loader=train_loader,
-                 val_loader=val_loader, history_dir=history_dir, weights_dir=weights_dir, data_name = data_name,
-                    LOSS=LOSS, EPOCHS=EPOCHS, DEVICE=DEVICE)
+val_losses,train_losses,val_metrics,train_metrics = active_train_model(model=model, model_name=model_name, data_name=data_name, train_loader=train_loader, val_loader=val_loader, history_dir=history_dir, weights_dir=weights_dir,
+                                                entropy_thresh=entropy_thresh, nr_queries=nr_queries, data_classes=data_classes, start_epoch = start_epoch, percentage = percentage,
+                                                 EPOCHS=EPOCHS, DEVICE=DEVICE, LOSS=LOSS)
+
+
+#val_losses,train_losses,val_metrics,train_metrics = train_model(model=model, model_name=model_name,nr_classes=nr_classes,train_loader=train_loader,
+#                  val_loader=val_loader, history_dir=history_dir, weights_dir=weights_dir, data_name=data_name,
+#                     LOSS=LOSS, EPOCHS=EPOCHS, DEVICE=DEVICE, percentage=percentage)
 
 plt.figure(figsize=(10,5))
-plt.title("Training and Validation Loss (ISIC17-DenseNet121)")
-plt.plot(val_losses,label="val-loss")
-plt.plot(train_losses,label="train-loss")
+plt.title(f"Training and Validation Metrics ({trained_model_name}_{EPOCHS}E_AL_{percentage}%)")
+plt.plot(val_losses,label="val-loss", linestyle='--', color="green")
+plt.plot(train_losses,label="train-loss", color="green")
+plt.plot(val_metrics[:,0], label = "val-acc", linestyle='--', color="red")
+plt.plot(train_metrics[:,0], label="train-acc", color="red")
 plt.xlabel("Iterations")
-plt.ylabel("Loss")
+plt.ylabel("Metrics")
 plt.legend()
-plt.savefig(os.path.join(trained_models_dir,"ISIC17_DenseNet121_loss_100E_2.png"))
+plt.savefig(os.path.join(trained_models_dir,f"{trained_model_name}_metrics_{EPOCHS}E_AL_{percentage}p.png"))
 plt.show()
 
+print("plot saved")
 
-plt.figure(figsize=(10,5))
-plt.title("Training and Validation Accuracy (ISIC17-DenseNet121)")
-plt.plot(val_metrics[:,0], label = "val-acc")
-plt.plot(train_metrics[:,0], label="train-acc")
-plt.xlabel("Iterations")
-plt.ylabel("Accuracy")
-plt.legend()
-plt.savefig(os.path.join(trained_models_dir,"ISIC17_DenseNet121_acc_100E_2.png"))
-plt.show()
+#-------------------------------------
+#------ RETRAIN STATION --------------
+#-------------------------------------
+
+## load previously trained model
+#train_type = "AUTO"
+##train_type = "AL"
+#pretrained_epochs = 20
+#trained_model = PretrainedModel(pretrained_model="efficientnet_b1", n_outputs=2)
+#trained_model_name = f"{data_name}_efficientNet_b1_retrained_80AUTO"
+#nr_classes = 2
+#model_path = "/home/pedro/Desktop/retrained_models/efficientNet_b1_ISIC17/weights/ISIC17_efficientNet_b1_retrained_AUTO_40E_ISIC17_10.0p_20e.pt"
+#trained_model.load_state_dict(torch.load(model_path, map_location=DEVICE))
+
+
+
+##val_losses,train_losses,val_metrics,train_metrics = active_train_model(model=trained_model, model_name=trained_model_name, data_name=data_name, train_loader=train_loader, val_loader=val_loader, history_dir=history_dir, weights_dir=weights_dir,
+##                                               entropy_thresh=entropy_thresh, nr_queries=nr_queries, data_classes=data_classes, start_epoch = start_epoch, percentage = percentage,
+##                                                EPOCHS=EPOCHS, DEVICE=DEVICE, LOSS=LOSS)
+
+#val_losses,train_losses,val_metrics,train_metrics = train_model(model=trained_model, model_name=trained_model_name,nr_classes=nr_classes,train_loader=train_loader,
+#                  val_loader=val_loader, history_dir=history_dir, weights_dir=weights_dir, data_name=data_name,
+#                     LOSS=LOSS, EPOCHS=EPOCHS, DEVICE=DEVICE, percentage=percentage)
+
+
+#plt.figure(figsize=(10,5))
+#plt.title(f"80AUTO_RETraining and Validation Metrics ({trained_model_name}_{percentage}%)")
+#plt.plot(val_losses,label="val-loss", linestyle='--', color="green")
+#plt.plot(train_losses,label="train-loss", color="green")
+#plt.plot(val_metrics[:,0], label = "val-acc", linestyle='--',color="red")
+#plt.plot(train_metrics[:,0], label="train-acc",color="red")
+#plt.xlabel("Iterations")
+#plt.ylabel("Metrics")
+#plt.legend()
+#plt.savefig(os.path.join(trained_models_dir,f"80AUTO_REtrain_{trained_model_name}_metrics_{percentage}p.png"))
+#plt.show()
+
+#print("plot saved")
+
+
+
+
+
+
