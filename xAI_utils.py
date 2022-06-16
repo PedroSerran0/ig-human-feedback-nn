@@ -6,12 +6,13 @@ import torch.nn.functional as F
 import numpy as np
 import sklearn
 from sklearn import model_selection
-from PIL import Image
+from PIL import Image, ImageFilter
 import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
 import torchvision
 import torchvision.transforms as transforms
 import torchvision.models as models
+import torch.nn as nn
 
 # Captum Imports
 from captum.attr import IntegratedGradients
@@ -66,27 +67,45 @@ def GenerateDeepLiftAtts(image, model, data_classes, label):
     _, predicted = torch.max(outputs, 1)
     pred = int(predicted[0])
 
+    trans = transforms.ToPILImage()
+    trans2 = transforms.ToTensor()
+    blurred_image = trans(image).filter(ImageFilter.BLUR)
+    blurred_image=trans2(blurred_image)
+    #imshow(blurred_image)
+
     input = image.unsqueeze(0)
     #input.requires_grad = True
     
     # Generate the visual explnations (saliency maps)
     # DeepLift
+    
     deeplift = DeepLift(model)
-
+    
     # Reset model's gradients
     model.zero_grad()
     input = input.type('torch.FloatTensor') 
+    
+    # set ones as reference
+    reference = torch.zeros(3,224,224)
+    reference = (reference.unsqueeze(0)).type('torch.FloatTensor')
+    
+    #reference = (blurred_image.unsqueeze(0)).type('torch.FloatTensor')
+
     #dl_att = deeplift.attribute(input, target=label.item())
-    dl_att = deeplift.attribute(input, target=pred)
+    dl_att = deeplift.attribute(input, target=pred, baselines=reference)
+    relu = torch.nn.ReLU()
+    dl_att = relu(dl_att)
     dl_att = np.transpose(dl_att.squeeze().cpu().detach().numpy(), (1, 2, 0))
+ 
+    #imshow(dl_att)
     
     original_image = np.transpose((image.cpu().detach().numpy() / 2) + 0.5, (1, 2, 0))
 
-    # # Visualization of deep lift attributions
-    # deepLiftFig,_ = viz.visualize_image_attr(dl_att, original_image=original_image,
-    #                                 method= "heat_map",
-    #                                 sign="all",
-    #                                 title="Deep Lift Attribution")
+     # Visualization of deep lift attributions
+    deepLiftFig,_ = viz.visualize_image_attr(dl_att, original_image=original_image,
+                                     method= "heat_map",
+                                     sign="all",
+                                     title="Deep Lift Attribution")
 
 
     return dl_att, pred

@@ -33,7 +33,7 @@ def my_loss(Ypred, X, W):
     return (W *(grad**2).mean(1)).mean()
 
 # Train model and sample the most useful images for decision making (entropy based sampling)
-def active_train_model(model, model_name, data_name, train_loader, val_loader, history_dir, weights_dir, entropy_thresh, nr_queries, start_epoch, data_classes, EPOCHS, DEVICE, LOSS, percentage=100):
+def active_train_model(model, model_name, data_name, train_loader, val_loader, history_dir, weights_dir, entropy_thresh, nr_queries, start_epoch, data_classes,oversample, EPOCHS, DEVICE, LOSS, percentage=100):
     
     # Hyper-parameters
     LEARNING_RATE = 1e-4
@@ -81,6 +81,20 @@ def active_train_model(model, model_name, data_name, train_loader, val_loader, h
         # Iterate through dataloader
         for batch_idx, (images, images_og, labels, indices) in enumerate(tqdm(train_loader)):
             # move data, labels and model to DEVICE (GPU or CPU)
+            if W.sum() > 0 and oversample == True:
+                print('W sum 1,2:', W.sum([1, 2]) > 0)
+                print('len(W):', len(W))
+                ix_annotated = torch.arange(0, len(W))[W.sum([1, 2]) > 0]
+                # ix_annotated = [0, 4, 9, ...]
+                print('ix_annotated:', ix_annotated)
+                i = ix_annotated[torch.randint(0, len(ix_annotated), ())]
+                print('adicionei a amostra', i)
+                _image, _image_og, _label, _indice = train_loader.dataset[i]
+                images = torch.cat((images, _image[None]))
+                images_og = torch.cat((images_og, _image_og[None]))
+                labels = torch.cat((labels, torch.tensor([_label])))
+                indices = torch.cat((indices, torch.tensor([_indice])))
+
             images, labels, images_og = images.to(DEVICE), labels.to(DEVICE), images_og.to(DEVICE)
             model = model.to(DEVICE)
 
@@ -192,14 +206,14 @@ def active_train_model(model, model_name, data_name, train_loader, val_loader, h
                 deepLiftAtts = torch.tensor(deepLiftAtts)
                 print(deepLiftAtts.shape)
 
-                __,selectedRectangles = GetOracleFeedback(image=query_image.detach().cpu().numpy(), label=query_label, idx=image_index, model_attributions=deepLiftAtts, pred=query_pred, rectSize=28, rectStride=28, nr_rects=10)
+                __, selectedRectangles = GetOracleFeedback(image=query_image.detach().cpu().numpy(), label=query_label, idx=image_index, model_attributions=deepLiftAtts, pred=query_pred, rectSize=28, rectStride=28, nr_rects=10)
                 print(selectedRectangles)
 
                 # change the weights W=1 in the selected rectangles area
-                print("index:", query_index)
+                print("index:", image_index)
                 print(f"Length of rectangle vector: {len(W)}")
                 for rect in selectedRectangles:
-                    W[query_index, rect[1]:rect[3], rect[0]:rect[2]] = 1
+                    W[image_index, rect[1]:rect[3], rect[0]:rect[2]] = 1
 
         # Print Statistics
         print(f"Train Loss: {vanilla_avg_train_loss}\tTrain Accuracy: {train_acc}")
@@ -221,7 +235,7 @@ def active_train_model(model, model_name, data_name, train_loader, val_loader, h
         # Update Variables
         # Min Training Loss
         if vanilla_avg_train_loss < min_train_loss:
-            print(f"Train loss decreased from {min_train_loss} to {avg_train_loss}.")
+            print(f"Train loss decreased from {min_train_loss} to {vanilla_avg_train_loss}.")
             min_train_loss = vanilla_avg_train_loss
 
         # DEBUG
@@ -301,7 +315,7 @@ def active_train_model(model, model_name, data_name, train_loader, val_loader, h
             # Train Loss
             val_losses[epoch] = avg_val_loss
             # Save it to directory
-            fname = os.path.join(history_dir, f"{model_name}_val_losses_AL_{percentage}.npy")
+            fname = os.path.join(history_dir, f"{model_name}_val_losses_{percentage}.npy")
             np.save(file=fname, arr=val_losses, allow_pickle=True)
 
 
@@ -315,7 +329,7 @@ def active_train_model(model, model_name, data_name, train_loader, val_loader, h
             # F1-Score
             # val_metrics[epoch, 3] = val_f1
             # Save it to directory
-            fname = os.path.join(history_dir, f"{model_name}_val_metrics_AL_{percentage}.npy")
+            fname = os.path.join(history_dir, f"{model_name}_val_metrics_{percentage}.npy")
             np.save(file=fname, arr=val_metrics, allow_pickle=True)
 
             # Update Variables
@@ -327,7 +341,7 @@ def active_train_model(model, model_name, data_name, train_loader, val_loader, h
                 print("Saving best model on validation...")
 
                 # Save checkpoint
-                model_path = os.path.join(weights_dir, f"{model_name}_{data_name}_AL_{percentage}p_{EPOCHS}e.pt")
+                model_path = os.path.join(weights_dir, f"{model_name}_{percentage}p_{EPOCHS}e.pt")
                 torch.save(model.state_dict(), model_path)
 
                 print(f"Successfully saved at: {model_path}")
@@ -561,7 +575,7 @@ def train_model(model, model_name, train_loader, val_loader, history_dir, weight
                 print("Saving best model on validation...")
 
                 # Save checkpoint
-                model_path = os.path.join(weights_dir, f"{model_name}_{data_name}_{percentage}p_{EPOCHS}e.pt")
+                model_path = os.path.join(weights_dir, f"{model_name}_{percentage}p_{EPOCHS}e.pt")
                 torch.save(model.state_dict(), model_path)
 
                 print(f"Successfully saved at: {model_path}")

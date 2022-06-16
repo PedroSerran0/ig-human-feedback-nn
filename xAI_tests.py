@@ -32,6 +32,7 @@ from xAI_utils import GenerateDeepLift
 from xAI_utils import GenerateDeepLiftAtts
 from choose_rects import GenerateRectangles
 from choose_rects import ChooseRectangles
+from choose_rects import GetOracleFeedback
 
 # CUDA
 GPU_TO_USE="0"
@@ -45,12 +46,13 @@ np.random.seed(random_seed)
 
 
 # Data Directories
-your_datasets_dir = "/home/up201605633/Desktop"
+your_datasets_dir = "/home/pedro/Desktop"
 data_name = "Aptos2019"
 data_dir = os.path.join(your_datasets_dir, data_name)
 
+
 #Model Directory
-trained_models_dir = "/home/up201605633/Desktop/trained_models"
+trained_models_dir = "/home/pedro/Desktop/trained_models"
 
 # train data
 train_dir = os.path.join(data_dir, "train")
@@ -60,9 +62,11 @@ MEAN = [0.485, 0.456, 0.406]
 STD = [0.229, 0.224, 0.225]
 
 train_transforms = torchvision.transforms.Compose([
-    torchvision.transforms.Resize((224, 224)),
-    torchvision.transforms.RandomAffine(degrees=(-10, 10), translate=(0.05, 0.1), scale=(0.95, 1.05), shear=0, resample=0, fillcolor=(0, 0, 0)),
+    torchvision.transforms.Resize((256, 256)),
+    torchvision.transforms.RandomAffine(degrees=(-180,180),translate=(0.05, 0.1), scale=(0.95, 1.05), shear=0, resample=0, fillcolor=(0, 0, 0)),
     torchvision.transforms.RandomHorizontalFlip(p=0.5),
+    torchvision.transforms.RandomCrop((224, 224)),
+    torchvision.transforms.ColorJitter(brightness=0.3),
     torchvision.transforms.ToTensor(),
     torchvision.transforms.Normalize(MEAN, STD)
 ])
@@ -74,66 +78,81 @@ val_transforms = torchvision.transforms.Compose([
     torchvision.transforms.Normalize(MEAN,STD)
 ])
 
-
 # Load and count data samples
+train_fraction = 0.1
+val_fraction = 0.1
+
 # Train Dataset
-train_set = Aptos19_Dataset(base_data_path=train_dir, label_file=train_label_file, transform=train_transforms)
-print(f"Number of Train Images: {len(train_set)} | Label Dict: {train_set.labels_dict}")
-val_set = Aptos19_Dataset(base_data_path=train_dir, label_file=train_label_file, transform=val_transforms)
+train_set = Aptos19_Dataset(base_data_path=train_dir, label_file=train_label_file, transform=train_transforms, transform_orig=val_transforms, split='train', fraction = train_fraction)
+print(f"Number of Total Train Images: {len(train_set)} | Label Dict: {train_set.labels_dict}")
+val_set = Aptos19_Dataset(base_data_path=train_dir, label_file=train_label_file, transform=val_transforms, transform_orig=val_transforms, split='test', fraction = val_fraction)
+print(f"Number of Total Validation Images: {len(val_set)} | Label Dict: {val_set.labels_dict}")
 
-img, img_og, label, idx = train_set[17]
 
-# # Set target train and val sizes
-# val_size = 0.2 # portion of the dataset
-# num_train = len(train_set)
-# indices = list(range(num_train))
-# split_idx = int(np.floor(0.2 * num_train))
 
-# train_idx, valid_idx = indices[:split_idx], indices[split_idx:]
-# assert len(train_idx) != 0 and len(valid_idx) != 0
-
-# # Split the train set into train and val
-# train_indices, val_indices = sklearn.model_selection.train_test_split(indices)
-# train_set = torch.utils.data.Subset(train_set, train_indices)
-# val_set = torch.utils.data.Subset(val_set, val_indices)
 
 # get batch and build loaders
 BATCH_SIZE = 10
-train_loader = torch.utils.data.DataLoader(dataset=train_set, batch_size=BATCH_SIZE, shuffle=True)
-val_loader = torch.utils.data.DataLoader(dataset=val_set, batch_size=BATCH_SIZE, shuffle=True)
+train_loader = torch.utils.data.DataLoader(dataset=train_set, batch_size=BATCH_SIZE, shuffle=True, num_workers=4)
+val_loader = torch.utils.data.DataLoader(dataset=val_set, batch_size=BATCH_SIZE, shuffle=True, num_workers=4)
 
-nr_classes = 5
-
-# Define model
 model = PretrainedModel(pretrained_model="efficientnet_b1", n_outputs=5)
 model_name = "efficientNet_b1"
 
 # Set model path
 trained_model_name = f"{model_name}_{data_name}"
 model_dir = os.path.join(trained_models_dir, trained_model_name)
+
+# Results and Weights
 weights_dir = os.path.join(model_dir, "weights")
+if not os.path.isdir(weights_dir):
+    os.makedirs(weights_dir)
+
+
+# History Files
 history_dir = os.path.join(model_dir, "history")
+if not os.path.isdir(history_dir):
+    os.makedirs(history_dir)
+    
+# Choose GPU
+DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
 
-# Load model
-model_path = os.path.join(weights_dir, f"{model_name}_{data_name}.pt")
-model.load_state_dict(torch.load(model_path, map_location = device))
-model.eval()
+#-------------------------------------
+#------ LOAD STATION --------------
+#-------------------------------------
 
-# #=====================================================================================================
-# #======================================  xAI Experiments =============================================
-# #=====================================================================================================
+# load previously trained model
+
+trained_model = PretrainedModel(pretrained_model="efficientnet_b1", n_outputs=5)
+nr_classes = 5
+model_path = "/home/pedro/Desktop/trained_models/efficientNet_b1_Aptos2019/weights/efficientNet_b1_50.0p_15e.pt"
+trained_model.load_state_dict(torch.load(model_path, map_location=DEVICE))
+
+#=====================================================================================================
+#======================================  xAI Experiments =============================================
+#=====================================================================================================
 
 # Define the Aptos Classes
 classes = ('0', '1', '2', '3', '4')
 
 # Print and show images
-x_image_dir = "/home/up201605633/Desktop/Results/DeepLift/"
+#x_image_dir = "/home/up201605633/Desktop/Results/DeepLift/"
 
 # get images from batch
 dataiter = iter(val_loader)
-images, labels = dataiter.next()
+images, images_og, labels, indices = dataiter.next()
 
+for i in range(10):
 
+    deepLiftAtts, query_pred = GenerateDeepLiftAtts(image=images_og[i], label=labels[i], model = trained_model, data_classes=classes)
+
+    # Aggregate along color channels and normalize to [-1, 1]
+    deepLiftAtts = deepLiftAtts.sum(axis=np.argmax(np.asarray(deepLiftAtts.shape) == 3))
+    deepLiftAtts /= np.max(np.abs(deepLiftAtts))
+    deepLiftAtts = torch.tensor(deepLiftAtts)
+    print(deepLiftAtts.shape)
+
+    x, y = GetOracleFeedback(image=images_og[i], label=labels[i], idx=indices[i], model_attributions=deepLiftAtts, pred=query_pred, rectSize=28, rectStride=28, nr_rects=10)
 
 # #Generate Explanations for 10 batches (100 images)
 # # for i in range(1):
