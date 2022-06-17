@@ -35,7 +35,7 @@ from choose_rects import ChooseRectangles
 def imshow(img ,transpose = True):
     img = img / 2 + 0.5     # unnormalize
     npimg = img.numpy()
-    plt.imshow(np.transpose(img, (1, 2, 0)))
+    plt.imshow(np.transpose(npimg, (1, 2, 0)))
     plt.show()
 
 def fig2img(fig):
@@ -69,8 +69,12 @@ def GenerateDeepLiftAtts(image, model, data_classes, label):
 
     trans = transforms.ToPILImage()
     trans2 = transforms.ToTensor()
-    blurred_image = trans(image).filter(ImageFilter.BLUR)
-    blurred_image=trans2(blurred_image)
+    blur = torchvision.transforms.GaussianBlur((17,37), sigma=(0.9, 10.0))
+    
+    blurred_image = blur(image)#.filter(ImageFilter.BLUR)
+#    r,g,b = blurred_image.split()
+#    blurred_image = Image.merge('RGB', (r,g,b))
+#    blurred_image=trans2(blurred_image)
     #imshow(blurred_image)
 
     input = image.unsqueeze(0)
@@ -85,16 +89,16 @@ def GenerateDeepLiftAtts(image, model, data_classes, label):
     model.zero_grad()
     input = input.type('torch.FloatTensor') 
     
-    # set ones as reference
-    reference = torch.zeros(3,224,224)
-    reference = (reference.unsqueeze(0)).type('torch.FloatTensor')
+     #set ones as reference
+    #reference = torch.ones(3,224,224)
+    #reference = (reference.unsqueeze(0)).type('torch.FloatTensor')
     
-    #reference = (blurred_image.unsqueeze(0)).type('torch.FloatTensor')
+    reference = (blurred_image.unsqueeze(0)).type('torch.FloatTensor')
 
     #dl_att = deeplift.attribute(input, target=label.item())
     dl_att = deeplift.attribute(input, target=pred, baselines=reference)
-    relu = torch.nn.ReLU()
-    dl_att = relu(dl_att)
+#    relu = torch.nn.ReLU()
+#    dl_att = relu(dl_att)
     dl_att = np.transpose(dl_att.squeeze().cpu().detach().numpy(), (1, 2, 0))
  
     #imshow(dl_att)
