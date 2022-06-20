@@ -106,10 +106,10 @@ def GenerateDeepLiftAtts(image, model, data_classes, label):
     original_image = np.transpose((image.cpu().detach().numpy() / 2) + 0.5, (1, 2, 0))
 
      # Visualization of deep lift attributions
-    deepLiftFig,_ = viz.visualize_image_attr(dl_att, original_image=original_image,
-                                     method= "heat_map",
-                                     sign="all",
-                                     title="Deep Lift Attribution")
+#    deepLiftFig,_ = viz.visualize_image_attr(dl_att, original_image=original_image,
+#                                     method= "heat_map",
+#                                     sign="all",
+#                                     title="Deep Lift Attribution")
 
 
     return dl_att, pred

@@ -33,7 +33,7 @@ data_dir = os.path.join(your_datasets_dir, "ISIC17")
 data_name = "ISIC17"
 
 #Model Directory
-trained_models_dir = "/home/pedro/Desktop/retrained_models"
+trained_models_dir = "/home/pedro/Desktop/trained_models"
 
 # train data
 train_dir = os.path.join(data_dir, "train")
@@ -65,7 +65,7 @@ val_transforms = torchvision.transforms.Compose([
 ])
 
 # Load and count data samples
-train_fraction = 0.1
+train_fraction = 1
 val_fraction = 1
 
 # Load and count data samples
@@ -78,7 +78,7 @@ val_set = ISIC17_Dataset(base_data_path=val_dir, label_file=val_label_file, tran
 print(f"Number of Validation Images: {len(val_set)} | Label Dict: {val_set.labels_dict}")
 
 # get batch and build loaders
-BATCH_SIZE = 1
+BATCH_SIZE = 4
 
 train_loader = torch.utils.data.DataLoader(dataset=train_set, batch_size=BATCH_SIZE, shuffle=True, num_workers=4)
 val_loader = torch.utils.data.DataLoader(dataset=val_set, batch_size=BATCH_SIZE, shuffle=True, num_workers=4)
@@ -93,7 +93,7 @@ model = PretrainedModel(pretrained_model="efficientnet_b1", n_outputs=2)
 model_name = "efficientNet_b1"
 
 # Set model path
-trained_model_name = f"{model_name}_{data_name}"
+trained_model_name = f"{model_name}_{data_name}_lr4"
 model_dir = os.path.join(trained_models_dir, trained_model_name)
 
 # Results and Weights
@@ -112,7 +112,7 @@ DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
 
 
 # Hyper-parameters
-EPOCHS = 20
+EPOCHS = 100
 # Active Learning parameters
 entropy_thresh = 0
 nr_queries = 20
@@ -124,14 +124,16 @@ percentage = train_fraction*100
 #LOSS = torch.nn.CrossEntropyLoss(weight=class_weight)
 LOSS = torch.nn.CrossEntropyLoss()
 
+train_description = "AUTO_100E"
+
 #val_losses,train_losses,val_metrics,train_metrics = active_train_model(model=model, model_name=model_name, data_name=data_name, train_loader=train_loader, val_loader=val_loader, history_dir=history_dir, weights_dir=weights_dir,
-#                                                entropy_thresh=entropy_thresh, nr_queries=nr_queries, data_classes=data_classes, start_epoch = start_epoch, percentage = percentage,
+#                                                entropy_thresh=entropy_thresh, nr_queries=nr_queries, data_classes=data_classes, oversample=True, start_epoch=start_epoch, percentage=percentage,
 #                                                 EPOCHS=EPOCHS, DEVICE=DEVICE, LOSS=LOSS)
 
 
-##val_losses,train_losses,val_metrics,train_metrics = train_model(model=model, model_name=model_name,nr_classes=nr_classes,train_loader=train_loader,
-##                  val_loader=val_loader, history_dir=history_dir, weights_dir=weights_dir, data_name=data_name,
-##                     LOSS=LOSS, EPOCHS=EPOCHS, DEVICE=DEVICE, percentage=percentage)
+val_losses,train_losses,val_metrics,train_metrics = train_model(model=model, model_name=model_name,nr_classes=nr_classes,train_loader=train_loader,
+                  val_loader=val_loader, history_dir=history_dir, weights_dir=weights_dir, data_name=data_name,
+                     LOSS=LOSS, EPOCHS=EPOCHS, DEVICE=DEVICE, percentage=percentage)
 
 #plt.figure(figsize=(10,5))
 #plt.title(f"Training and Validation Metrics ({trained_model_name}_{EPOCHS}E_AL_{percentage}%)")
@@ -151,23 +153,23 @@ LOSS = torch.nn.CrossEntropyLoss()
 #------ RETRAIN STATION --------------
 #-------------------------------------
 
-# load previously trained model
-train_description = "5AUTO_re_20AUTO"
-pretrained_epochs = 5
-trained_model = PretrainedModel(pretrained_model="efficientnet_b1", n_outputs=2)
-trained_model_name = f"{data_name}_efficientNet_b1_{train_description}"
-nr_classes = 2
-model_path = "/home/pedro/Desktop/trained_models/efficientNet_b1_ISIC17/weights/efficientNet_b1_ISIC17_10.0p_5e.pt"
-trained_model.load_state_dict(torch.load(model_path, map_location=DEVICE))
+## load previously trained model
+#train_description = "5AUTO_re_20AUTO"
+#pretrained_epochs = 5
+#trained_model = PretrainedModel(pretrained_model="efficientnet_b1", n_outputs=2)
+#trained_model_name = f"{data_name}_efficientNet_b1_{train_description}"
+#nr_classes = 2
+#model_path = "/home/pedro/Desktop/trained_models/efficientNet_b1_ISIC17/weights/efficientNet_b1_ISIC17_10.0p_5e.pt"
+#trained_model.load_state_dict(torch.load(model_path, map_location=DEVICE))
 
 
-#val_losses,train_losses,val_metrics,train_metrics = active_train_model(model=trained_model, model_name=trained_model_name, data_name=data_name, train_loader=train_loader, val_loader=val_loader, history_dir=history_dir, weights_dir=weights_dir,
-#                                               entropy_thresh=entropy_thresh, nr_queries=nr_queries, data_classes=data_classes, oversample=True, start_epoch=start_epoch, percentage=percentage,
-#                                                EPOCHS=EPOCHS, DEVICE=DEVICE, LOSS=LOSS)
+##val_losses,train_losses,val_metrics,train_metrics = active_train_model(model=trained_model, model_name=trained_model_name, data_name=data_name, train_loader=train_loader, val_loader=val_loader, history_dir=history_dir, weights_dir=weights_dir,
+##                                               entropy_thresh=entropy_thresh, nr_queries=nr_queries, data_classes=data_classes, oversample=True, start_epoch=start_epoch, percentage=percentage,
+##                                                EPOCHS=EPOCHS, DEVICE=DEVICE, LOSS=LOSS)
 
-val_losses,train_losses,val_metrics,train_metrics = train_model(model=trained_model, model_name=trained_model_name,nr_classes=nr_classes,train_loader=train_loader,
-                  val_loader=val_loader, history_dir=history_dir, weights_dir=weights_dir, data_name=data_name,
-                     LOSS=LOSS, EPOCHS=EPOCHS, DEVICE=DEVICE, percentage=percentage)
+#val_losses,train_losses,val_metrics,train_metrics = train_model(model=trained_model, model_name=trained_model_name,nr_classes=nr_classes,train_loader=train_loader,
+#                  val_loader=val_loader, history_dir=history_dir, weights_dir=weights_dir, data_name=data_name,
+#                     LOSS=LOSS, EPOCHS=EPOCHS, DEVICE=DEVICE, percentage=percentage)
 
 
 plt.figure(figsize=(10,5))

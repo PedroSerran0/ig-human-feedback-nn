@@ -19,6 +19,53 @@ import torchvision.transforms as transforms
 from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
 from data_utilities import get_images
+import pandas as pd
+from skimage.io import imread
+from PIL import ImageFile
+ImageFile.LOAD_TRUNCATED_IMAGES = True
+
+#=====================================================================================================
+#======================================= NCI ========================================================
+#=====================================================================================================
+
+class NCI_Dataset(Dataset):
+    def __init__(self, fold, path, transform=None, transform_orig=None):
+        assert fold in ['train', 'test']
+        #self.root = '/data/NCI/training/NHS'
+        self.root = path
+        self.files = [f for f in os.listdir(self.root) if f.endswith('_C1.jpg')]
+        rand = np.random.RandomState(123)
+        ix = rand.choice(len(self.files), len(self.files), False)
+        ix = ix[:int(0.75*len(ix))] if fold == 'train' else ix[int(0.75*len(ix)):]
+        self.files = [self.files[i] for i in ix]
+        df = pd.read_excel(os.path.join(self.root, 'covariate_data_training_NHS.xls'), skiprows=2)
+        self.classes = [df['WRST_HIST_AFTER'][df['IMAGE_ID'] == f].iloc[0] for f in self.files]
+        self.transform = transform
+        self.transform_orig = transform_orig
+        
+
+    def __len__(self):
+        return len(self.files)
+
+    def __getitem__(self, idx):
+        image = imread(os.path.join(self.root, self.files[idx]))
+        label = self.classes[idx]
+        label = 0 if label <= 0 else 1
+        
+        image = np.asarray(image)
+        
+        # Load image with PIL
+        image = image_orig = Image.fromarray(image)
+
+        # Apply transformation
+        if self.transform:
+            image = self.transform(image)
+        if self.transform_orig:
+            image_orig = self.transform_orig(image_orig)
+        
+        return image, image_orig, label, idx
+
+
 
 #=====================================================================================================
 #======================================= ROSE ========================================================
