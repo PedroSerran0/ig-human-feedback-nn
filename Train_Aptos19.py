@@ -76,7 +76,7 @@ val_transforms = torchvision.transforms.Compose([
 ])
 
 # Load and count data samples
-train_fraction = 1
+train_fraction = 0.1
 val_fraction = 1
 
 # Train Dataset
@@ -115,21 +115,23 @@ if not os.path.isdir(history_dir):
 DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
 
 # Hyper-parameters
-EPOCHS = 20
+EPOCHS = 10
 LOSS = torch.nn.CrossEntropyLoss()
 
 # Active Learning parameters
-entropy_thresh = 0
-nr_queries = 20
+entropy_thresh = 1
+nr_queries = 5
 data_classes = ('0', '1', '2', '3', '4')
 start_epoch = 1
 percentage = train_fraction*100
+isOversampled = True
+sampling_process = 'low_entropy'
 
-#train_description = "200base_reAUTO_20E_lr4"
+train_description = "AL_5E_lr4_low"
 
-#val_losses,train_losses,val_metrics,train_metrics = active_train_model(model=model, model_name=model_name, data_name=data_name, train_loader=train_loader, val_loader=val_loader, history_dir=history_dir, weights_dir=weights_dir,
-#                                                entropy_thresh=entropy_thresh, nr_queries=nr_queries, data_classes=data_classes, start_epoch = start_epoch, percentage = percentage,
-#                                                 EPOCHS=EPOCHS, DEVICE=DEVICE, LOSS=LOSS)
+val_losses,train_losses,val_metrics,train_metrics = active_train_model(model=model, model_name=model_name, data_name=data_name, train_loader=train_loader, val_loader=val_loader, history_dir=history_dir, weights_dir=weights_dir,
+                                                entropy_thresh=entropy_thresh, nr_queries=nr_queries, data_classes=data_classes, oversample=isOversampled, sampling_process=sampling_process, start_epoch = start_epoch, percentage = percentage,
+                                                 EPOCHS=EPOCHS, DEVICE=DEVICE, LOSS=LOSS)
 
 
 #val_losses,train_losses,val_metrics,train_metrics = train_model(model=model, model_name=model_name,nr_classes=5,train_loader=train_loader,
@@ -142,18 +144,18 @@ percentage = train_fraction*100
 #-------------------------------------
 
 # load previously trained model
-train_description = "200base_reAL_20E_lr4"
-pretrained_epochs = 200
-trained_model = PretrainedModel(pretrained_model="efficientnet_b1", n_outputs=5)
-trained_model_name = f"{data_name}_efficientNet_b1_{train_description}"
-nr_classes = 5
-model_path = "/home/pedro/Desktop/trained_models/efficientNet_b1_Aptos2019/weights/efficientNet_b1_100p_200e.pt"
-trained_model.load_state_dict(torch.load(model_path, map_location=DEVICE))
+#train_description = "200base_reAL_20E_lr4"
+#pretrained_epochs = 200
+#trained_model = PretrainedModel(pretrained_model="efficientnet_b1", n_outputs=5)
+#trained_model_name = f"{data_name}_efficientNet_b1_{train_description}"
+#nr_classes = 5
+#model_path = "/home/pedro/Desktop/trained_models/efficientNet_b1_Aptos2019/weights/efficientNet_b1_100p_200e.pt"
+#trained_model.load_state_dict(torch.load(model_path, map_location=DEVICE))
 
 
-val_losses,train_losses,val_metrics,train_metrics = active_train_model(model=trained_model, model_name=trained_model_name, data_name=data_name, train_loader=train_loader, val_loader=val_loader, history_dir=history_dir, weights_dir=weights_dir,
-                                               entropy_thresh=entropy_thresh, nr_queries=nr_queries, data_classes=data_classes, oversample=True, start_epoch = start_epoch, percentage = percentage,
-                                                EPOCHS=EPOCHS, DEVICE=DEVICE, LOSS=LOSS)
+#val_losses,train_losses,val_metrics,train_metrics = active_train_model(model=trained_model, model_name=trained_model_name, data_name=data_name, train_loader=train_loader, val_loader=val_loader, history_dir=history_dir, weights_dir=weights_dir,
+#                                               entropy_thresh=entropy_thresh, nr_queries=nr_queries, data_classes=data_classes, oversample=True, start_epoch = start_epoch, percentage = percentage,
+#                                                EPOCHS=EPOCHS, DEVICE=DEVICE, LOSS=LOSS)
 
 #val_losses,train_losses,val_metrics,train_metrics = train_model(model=trained_model, model_name=trained_model_name,nr_classes=nr_classes,train_loader=train_loader,
 #                  val_loader=val_loader, history_dir=history_dir, weights_dir=weights_dir, data_name=data_name,

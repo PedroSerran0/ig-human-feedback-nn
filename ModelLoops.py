@@ -20,6 +20,9 @@ import torch.optim as optim
 
 # My imports
 from sklearn.metrics import accuracy_score
+from sklearn.metrics import recall_score
+from sklearn.metrics import precision_score
+from sklearn.metrics import f1_score
 from scipy.stats import entropy
 from xAI_utils import takeThird
 from xAI_utils import GenerateDeepLiftAtts
@@ -35,8 +38,9 @@ def my_loss(Ypred, X, W):
     return (W *(grad**2).mean(1)).mean()
 
 # Train model and sample the most useful images for decision making (entropy based sampling)
-def active_train_model(model, model_name, data_name, train_loader, val_loader, history_dir, weights_dir, entropy_thresh, nr_queries, start_epoch, data_classes,oversample, EPOCHS, DEVICE, LOSS, percentage=100):
+def active_train_model(model, model_name, data_name, train_loader, val_loader, history_dir, weights_dir, entropy_thresh, nr_queries, start_epoch, data_classes, oversample, sampling_process, EPOCHS, DEVICE, LOSS, percentage=100):
     
+    assert sampling_process in ['low_entropy', 'high_entropy']
     # Hyper-parameters
     LEARNING_RATE = 1e-4
     OPTIMISER = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)
@@ -70,7 +74,7 @@ def active_train_model(model, model_name, data_name, train_loader, val_loader, h
 
         # Initialise list of high entropy predictions
         # and corresponding images
-        high_entropy_pred = list()
+        informative_pred = list()
 
         # Running train loss
         run_train_loss = 0.0
@@ -126,32 +130,32 @@ def active_train_model(model, model_name, data_name, train_loader, val_loader, h
             
             # Perform a single optimization step (parameter update)
             OPTIMISER.step()
-
+            
+            # Initialise Active Learning
             if(epoch >= start_epoch):
                 # Copy logits to cpu
                 pred_logits = logits.cpu().detach().numpy()
                 pred_logits = torch.FloatTensor(pred_logits)
                 pred_probs = torch.softmax(pred_logits,1)
-
-                # Iterate logits tensor 
-                for idx in range(len(pred_probs)):
-                    # calculate entropy for each single image logits in batch
-                    pred_entropy = entropy(pred_probs[idx])
-                    if(pred_entropy > entropy_thresh):
-                        temp_image_info = [images_og[idx], labels[idx], pred_entropy, indices[idx], idx]
-                        high_entropy_pred.append(temp_image_info)  
-
-
-
-            # Compute the batch loss
-            # Using CrossEntropy w/ Softmax
-            #loss = LOSS(logits, labels) + my_loss(logits, images)
-
-            # # Backward pass: compute gradient of the loss with respect to model parameters
-            # loss.backward()
-            
-            # # Perform a single optimization step (parameter update)
-            # OPTIMISER.step()
+                _,pred = torch.max(pred_probs, 1)
+                
+                if(sampling_process == 'high_entropy'):
+                    # Iterate logits tensor 
+                    for idx in range(len(pred_probs)):
+                        # calculate entropy for each single image logits in batch
+                        pred_entropy = entropy(pred_probs[idx])
+                        if(pred_entropy > entropy_thresh):
+                            temp_image_info = [images_og[idx], labels[idx], pred_entropy, indices[idx], idx]
+                            informative_pred.append(temp_image_info)
+                elif(sampling_process == 'low_entropy'):
+                    for idx in range(len(pred_probs)):
+                        pred_entropy = entropy(pred_probs[idx])
+                        
+                        if pred_entropy < entropy_thresh and pred[idx] != labels[idx]:
+                            temp_image_info = [images_og[idx], labels[idx], pred_entropy, indices[idx], idx]
+                            informative_pred.append(temp_image_info)
+                            
+                      
             
             # Update batch losses
             run_train_loss += (loss.item() * images.size(0))
@@ -173,40 +177,34 @@ def active_train_model(model, model_name, data_name, train_loader, val_loader, h
 
         # Compute Train Metrics
         train_acc = accuracy_score(y_true=y_train_true, y_pred=y_train_pred)
-        # train_recall = recall_score(y_true=y_train_true, y_pred=y_train_pred, average="weighted")
-        # train_precision = precision_score(y_true=y_train_true, y_pred=y_train_pred, average="weighted")
-        # train_f1 = f1_score(y_true=y_train_true, y_pred=y_train_pred, average="weighted")
-
-
-        # Print high entropy prediciton data points
-        print(f"Number of high entropy predictions after {epoch+1} epochs: {len(high_entropy_pred)}")
-
-        # # Visualize entropy distribution
-        # df = pd.DataFrame(high_entropy_pred, columns = ['Image','Label','Entropy'])
-        # plt.hist(df['Entropy'], color = 'blue', edgecolor = 'black',
-        #  bins = int(160/10))
-        # plt.savefig(f"/home/up201605633/Desktop/Results/DeepLift/AL_tests/entropy_dist_e{epoch+1}.png")
+        train_recall = recall_score(y_true=y_train_true, y_pred=y_train_pred, average="weighted")
+        train_precision = precision_score(y_true=y_train_true, y_pred=y_train_pred, average="weighted")
+        train_f1 = f1_score(y_true=y_train_true, y_pred=y_train_pred, average="weighted")
 
         # Get highest entropy prediction information
-        high_entropy_pred.sort(key=takeThird, reverse=True)
-        print(f"Highest entropy predictions after {epoch+1} epochs: ")
-
+        if(sampling_process == 'high_entropy' and len(informative_pred) > 0):
+            informative_pred.sort(key=takeThird, reverse=True)
+            print(f"Highest entropy predictions after {epoch+1} epochs: ")
+        elif(sampling_process == 'low_entropy' and len(informative_pred) > 0):
+            informative_pred.sort(key=takeThird, reverse=False)
+            print(f"Lowest entropy predictions after {epoch+1} epochs: ")
+        
         # Print query entropies and perform Deep Lift on each data point
-        #save_file_dir = "/home/up201605633/Desktop/Results/DeepLift/AL_tests/"
-        for i in range(len(high_entropy_pred)):
+        for i in range(len(informative_pred)):
             if(i < nr_queries):
-                print(high_entropy_pred[i][2]) 
-                query_image = high_entropy_pred[i][0]
-                query_index = high_entropy_pred[i][4]
-                image_index = high_entropy_pred[i][3]
-                query_label = high_entropy_pred[i][1]
+                print(informative_pred[i][2]) 
+                query_image = informative_pred[i][0]
+                query_index = informative_pred[i][4]
+                image_index = informative_pred[i][3]
+                query_label = informative_pred[i][1]
                 deepLiftAtts, query_pred = GenerateDeepLiftAtts(image=query_image, label=query_label, model = model, data_classes=data_classes)
-
+                
+                print("query_pred: ",query_pred,"query_label", query_label)
                 # Aggregate along color channels and normalize to [-1, 1]
                 deepLiftAtts = deepLiftAtts.sum(axis=np.argmax(np.asarray(deepLiftAtts.shape) == 3))
                 deepLiftAtts /= np.max(np.abs(deepLiftAtts))
                 deepLiftAtts = torch.tensor(deepLiftAtts)
-                print(deepLiftAtts.shape)
+                #print(deepLiftAtts.shape)
 
                 __, selectedRectangles = GetOracleFeedback(image=query_image.detach().cpu().numpy(), label=query_label, idx=image_index, model_attributions=deepLiftAtts, pred=query_pred, rectSize=28, rectStride=28, nr_rects=10)
                 print(selectedRectangles)
@@ -216,10 +214,21 @@ def active_train_model(model, model_name, data_name, train_loader, val_loader, h
                 print(f"Length of rectangle vector: {len(W)}")
                 for rect in selectedRectangles:
                     W[image_index, rect[1]:rect[3], rect[0]:rect[2]] = 1
+            
+        # Print high entropy prediciton data points
+        print(f"Number of informative predictions after {epoch+1} epochs: {len(informative_pred)}")
 
+        # # Visualize entropy distribution
+        # df = pd.DataFrame(informative_pred, columns = ['Image','Label','Entropy'])
+        # plt.hist(df['Entropy'], color = 'blue', edgecolor = 'black',
+        #  bins = int(160/10))
+        # plt.savefig(f"/home/up201605633/Desktop/Results/DeepLift/AL_tests/entropy_dist_e{epoch+1}.png")
+
+
+        
         # Print Statistics
         print(f"Train Loss: {vanilla_avg_train_loss}\tTrain Accuracy: {train_acc}")
-
+        
         # Append values to the arrays
         # Train Loss
         train_losses[epoch] = vanilla_avg_train_loss
@@ -228,11 +237,11 @@ def active_train_model(model, model_name, data_name, train_loader, val_loader, h
         # Acc
         train_metrics[epoch, 0] = train_acc
         # Recall
-        # train_metrics[epoch, 1] = train_recall
+        train_metrics[epoch, 1] = train_recall
         # Precision
-        # train_metrics[epoch, 2] = train_precision
+        train_metrics[epoch, 2] = train_precision
         # F1-Score
-        # train_metrics[epoch, 3] = train_f1
+        train_metrics[epoch, 3] = train_f1
 
         # Update Variables
         # Min Training Loss
@@ -305,9 +314,9 @@ def active_train_model(model, model_name, data_name, train_loader, val_loader, h
 
             # Compute Training Accuracy
             val_acc = accuracy_score(y_true=y_val_true, y_pred=y_val_pred)
-            # val_recall = recall_score(y_true=y_val_true, y_pred=y_val_pred, average="weighted")
-            # val_precision = precision_score(y_true=y_val_true, y_pred=y_val_pred, average="weighted")
-            # val_f1 = f1_score(y_true=y_val_true, y_pred=y_val_pred, average="weighted")
+            val_recall = recall_score(y_true=y_val_true, y_pred=y_val_pred, average="weighted")
+            val_precision = precision_score(y_true=y_val_true, y_pred=y_val_pred, average="weighted")
+            val_f1 = f1_score(y_true=y_val_true, y_pred=y_val_pred, average="weighted")
 
             # Print Statistics
             print(f"Validation Loss: {avg_val_loss}\tValidation Accuracy: {val_acc}")
@@ -317,7 +326,7 @@ def active_train_model(model, model_name, data_name, train_loader, val_loader, h
             # Train Loss
             val_losses[epoch] = avg_val_loss
             # Save it to directory
-            fname = os.path.join(history_dir, f"{model_name}_val_losses_{percentage}.npy")
+            fname = os.path.join(history_dir, f"{model_name}_val_losses_{percentage}_{sampling_process}.npy")
             np.save(file=fname, arr=val_losses, allow_pickle=True)
 
 
@@ -325,13 +334,13 @@ def active_train_model(model, model_name, data_name, train_loader, val_loader, h
             # Acc
             val_metrics[epoch, 0] = val_acc
             # Recall
-            # val_metrics[epoch, 1] = val_recall
+            val_metrics[epoch, 1] = val_recall
             # Precision
-            # val_metrics[epoch, 2] = val_precision
+            val_metrics[epoch, 2] = val_precision
             # F1-Score
-            # val_metrics[epoch, 3] = val_f1
+            val_metrics[epoch, 3] = val_f1
             # Save it to directory
-            fname = os.path.join(history_dir, f"{model_name}_val_metrics_{percentage}.npy")
+            fname = os.path.join(history_dir, f"{model_name}_val_metrics_{percentage}_{sampling_process}.npy")
             np.save(file=fname, arr=val_metrics, allow_pickle=True)
 
             # Update Variables
@@ -343,7 +352,7 @@ def active_train_model(model, model_name, data_name, train_loader, val_loader, h
                 print("Saving best model on validation...")
 
                 # Save checkpoint
-                model_path = os.path.join(weights_dir, f"{model_name}_{percentage}p_{EPOCHS}e.pt")
+                model_path = os.path.join(weights_dir, f"{model_name}_{percentage}p_{EPOCHS}e_{sampling_process}.pt")
                 torch.save(model.state_dict(), model_path)
 
                 print(f"Successfully saved at: {model_path}")
