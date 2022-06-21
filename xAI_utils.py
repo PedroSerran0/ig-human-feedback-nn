@@ -54,8 +54,8 @@ def attribute_image_features(algorithm, input, labels, ind, **kwargs):
     return tensor_attributions
 
 
-def GenerateDeepLiftAtts(image, model, data_classes, label):
-    model.eval()
+def GenerateDeepLiftAtts(image, model, data_classes, label, temp_pred):
+    #model.eval()
 
     # Get image classification
     model.to('cpu')
@@ -64,8 +64,10 @@ def GenerateDeepLiftAtts(image, model, data_classes, label):
     image_batch = image_batch.type('torch.FloatTensor') 
     outputs = model(image_batch)
 
-    _, predicted = torch.max(outputs, 1)
+    outputs_probs = torch.softmax(outputs,1)
+    _, predicted = torch.max(outputs_probs, 1)
     pred = int(predicted[0])
+    print('previous pred:', temp_pred, 'new pred:', pred, predicted.shape)
 
     trans = transforms.ToPILImage()
     trans2 = transforms.ToTensor()

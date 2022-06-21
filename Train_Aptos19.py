@@ -43,13 +43,13 @@ np.random.seed(random_seed)
 
 
 # Data Directories
-your_datasets_dir = "/home/pedro/Desktop"
+your_datasets_dir = "/home/up201605633/Desktop"
 data_name = "Aptos2019"
 data_dir = os.path.join(your_datasets_dir, data_name)
 
 
 #Model Directory
-trained_models_dir = "/home/pedro/Desktop/trained_AL_models_fixed"
+trained_models_dir = "/home/up201605633/Desktop/trained_models"
 
 # train data
 train_dir = os.path.join(data_dir, "train")
