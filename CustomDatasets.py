@@ -29,7 +29,7 @@ ImageFile.LOAD_TRUNCATED_IMAGES = True
 #=====================================================================================================
 
 class NCI_Dataset(Dataset):
-    def __init__(self, fold, path, transform=None, transform_orig=None):
+    def __init__(self, fold, path, transform=None, transform_orig=None, fraction=1):
         assert fold in ['train', 'test']
         #self.root = '/data/NCI/training/NHS'
         self.root = path
@@ -42,6 +42,11 @@ class NCI_Dataset(Dataset):
         self.classes = [df['WRST_HIST_AFTER'][df['IMAGE_ID'] == f].iloc[0] for f in self.files]
         self.transform = transform
         self.transform_orig = transform_orig
+        
+        # get desired fraction of data
+        data_size = len(self.files)
+        target_size = round(fraction * data_size)
+        self.files = self.files[0:(target_size-1)]
         
 
     def __len__(self):

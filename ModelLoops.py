@@ -28,7 +28,7 @@ from xAI_utils import takeThird
 from xAI_utils import GenerateDeepLiftAtts
 from choose_rects import GetOracleFeedback
 
-HITL_LAMBDA = 1e6
+HITL_LAMBDA = 1e7
 
 def my_loss(Ypred, X, W):
     # it "works" with both retain_graph=True and create_graph=True, but I think
@@ -42,7 +42,7 @@ def active_train_model(model, model_name, data_name, train_loader, val_loader, h
     
     assert sampling_process in ['low_entropy', 'high_entropy']
     # Hyper-parameters
-    LEARNING_RATE = 1e-4
+    LEARNING_RATE = 1e-5
     OPTIMISER = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)
 
     # Initialise min_train and min_val loss trackers
@@ -381,7 +381,7 @@ def train_model(model, model_name, train_loader, val_loader, history_dir, weight
     img_width = 224
 
     # Hyper-parameters
-    LEARNING_RATE = 1e-4
+    LEARNING_RATE = 1e-5
     OPTIMISER = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)
     BATCH_SIZE = 2
 
@@ -464,9 +464,9 @@ def train_model(model, model_name, train_loader, val_loader, history_dir, weight
 
         # Compute Train Metrics
         train_acc = accuracy_score(y_true=y_train_true, y_pred=y_train_pred)
-        # train_recall = recall_score(y_true=y_train_true, y_pred=y_train_pred, average="weighted")
-        # train_precision = precision_score(y_true=y_train_true, y_pred=y_train_pred, average="weighted")
-        # train_f1 = f1_score(y_true=y_train_true, y_pred=y_train_pred, average="weighted")
+        train_recall = recall_score(y_true=y_train_true, y_pred=y_train_pred, average="weighted")
+        train_precision = precision_score(y_true=y_train_true, y_pred=y_train_pred, average="weighted")
+        train_f1 = f1_score(y_true=y_train_true, y_pred=y_train_pred, average="weighted")
 
         # Print Statistics
         print(f"Train Loss: {avg_train_loss}\tTrain Accuracy: {train_acc}")
@@ -485,11 +485,11 @@ def train_model(model, model_name, train_loader, val_loader, history_dir, weight
         # Acc
         train_metrics[epoch, 0] = train_acc
         # Recall
-        # train_metrics[epoch, 1] = train_recall
+        train_metrics[epoch, 1] = train_recall
         # Precision
-        # train_metrics[epoch, 2] = train_precision
+        train_metrics[epoch, 2] = train_precision
         # F1-Score
-        # train_metrics[epoch, 3] = train_f1
+        train_metrics[epoch, 3] = train_f1
         # Save it to directory
         fname = os.path.join(history_dir, f"{model_name}_tr_metrics_{percentage}.npy")
         np.save(file=fname, arr=train_metrics, allow_pickle=True)
@@ -554,9 +554,9 @@ def train_model(model, model_name, train_loader, val_loader, history_dir, weight
 
             # Compute Training Accuracy
             val_acc = accuracy_score(y_true=y_val_true, y_pred=y_val_pred)
-            # val_recall = recall_score(y_true=y_val_true, y_pred=y_val_pred, average="weighted")
-            # val_precision = precision_score(y_true=y_val_true, y_pred=y_val_pred, average="weighted")
-            # val_f1 = f1_score(y_true=y_val_true, y_pred=y_val_pred, average="weighted")
+            val_recall = recall_score(y_true=y_val_true, y_pred=y_val_pred, average="weighted")
+            val_precision = precision_score(y_true=y_val_true, y_pred=y_val_pred, average="weighted")
+            val_f1 = f1_score(y_true=y_val_true, y_pred=y_val_pred, average="weighted")
 
             # Print Statistics
             print(f"Validation Loss: {avg_val_loss}\tValidation Accuracy: {val_acc}")
@@ -574,11 +574,11 @@ def train_model(model, model_name, train_loader, val_loader, history_dir, weight
             # Acc
             val_metrics[epoch, 0] = val_acc
             # Recall
-            # val_metrics[epoch, 1] = val_recall
+            val_metrics[epoch, 1] = val_recall
             # Precision
-            # val_metrics[epoch, 2] = val_precision
+            val_metrics[epoch, 2] = val_precision
             # F1-Score
-            # val_metrics[epoch, 3] = val_f1
+            val_metrics[epoch, 3] = val_f1
             # Save it to directory
             fname = os.path.join(history_dir, f"{model_name}_val_metrics.npy")
             np.save(file=fname, arr=val_metrics, allow_pickle=True)
