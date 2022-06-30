@@ -2,17 +2,17 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
 
-data_path = "/home/pedro/Desktop/new_AL_models/efficientNet_b1_lr5_NCI/history/"
+data_path = "/home/pedro/Desktop/retrained_models/efficientNet_b1_lr5_NCI/history/"
 
-val_loss_path = f"{data_path}efficientNet_b1_lr5_val_losses_0.5_low_entropy.npy"
-val_metrics_path = f"{data_path}efficientNet_b1_lr5_val_metrics_0.5_low_entropy.npy"
-train_loss_path = f"{data_path}efficientNet_b1_lr5_train_losses_0.5_low_entropy.npy"
-train_metrics_path = f"{data_path}efficientNet_b1_lr5_train_metrics_0.5_low_entropy.npy"
+val_loss_path = f"{data_path}NCI_efficientNet_b1_20ALbase_reAUTO_80E_lr5_val_losses_50.0.npy"
+val_metrics_path = f"{data_path}NCI_efficientNet_b1_20ALbase_reAUTO_80E_lr5_val_metrics.npy"
+#train_loss_path = f"{data_path}efficientNet_b1_lr5_train_losses_0.5_low_entropy.npy"
+#train_metrics_path = f"{data_path}efficientNet_b1_lr5_train_metrics_0.5_low_entropy.npy"
 
 val_losses = np.load(val_loss_path)
 val_metrics = np.load(val_metrics_path)
-train_losses = np.load(train_loss_path)
-train_metrics = np.load(train_metrics_path)
+#train_losses = np.load(train_loss_path)
+#train_metrics = np.load(train_metrics_path)
 
 trained_model_name = "NCI_effNet_lr5"
 percentage = "0.5"
