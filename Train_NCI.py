@@ -44,7 +44,7 @@ data_dir = os.path.join(your_datasets_dir, "NHS")
 
 
 #Model Directory
-trained_models_dir = "/home/pedro/Desktop/retrained_models"
+trained_models_dir = "/home/pedro/Desktop/new_AL_models"
 
 # train data
 #train_dir = os.path.join(data_dir, "train")
@@ -71,7 +71,7 @@ val_transforms = torchvision.transforms.Compose([
 ])
 
 # Load and count data samples
-train_fraction = 0.5
+train_fraction = 0.005
 val_fraction = 1
 
 # Train Dataset
@@ -110,24 +110,24 @@ if not os.path.isdir(history_dir):
 DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
 
 # Hyper-parameters
-EPOCHS = 80
+EPOCHS = 100
 LOSS = torch.nn.CrossEntropyLoss()
 
 # Active Learning parameters
 entropy_thresh = 1
 nr_queries = 20
-data_classes = ('0', '1', '2', '3', '4')
+data_classes = ('0', '1')
 start_epoch = 1
 percentage = train_fraction*100
 isOversampled = True
 sampling_process = 'low_entropy'
 
-#train_description = "20_AL_lr5_over_low_1e7"
-#train_description = "100E_AUTO_lr5"
+train_description = "20_AL_80AUTO_lr5_over_low_1e7_REDO"
+#train_description = "100E_AUTO_lr5_REDO"
 
-#val_losses,train_losses,val_metrics,train_metrics = active_train_model(model=model, model_name=model_name, data_name=data_name, train_loader=train_loader, val_loader=val_loader, history_dir=history_dir, weights_dir=weights_dir,
-#                                                entropy_thresh=entropy_thresh, nr_queries=nr_queries, data_classes=data_classes, oversample=isOversampled, sampling_process=sampling_process, start_epoch = start_epoch, percentage = percentage,
-#                                                 EPOCHS=EPOCHS, DEVICE=DEVICE, LOSS=LOSS)
+val_losses,train_losses,val_metrics,train_metrics = active_train_model(model=model, model_name=model_name, data_name=data_name, train_loader=train_loader, val_loader=val_loader, history_dir=history_dir, weights_dir=weights_dir,
+                                                entropy_thresh=entropy_thresh, nr_queries=nr_queries, data_classes=data_classes, oversample=isOversampled, sampling_process=sampling_process, start_epoch = start_epoch, percentage = percentage,
+                                                 EPOCHS=EPOCHS, DEVICE=DEVICE, LOSS=LOSS)
 
 
 #val_losses,train_losses,val_metrics,train_metrics = train_model(model=model, model_name=model_name,nr_classes=2,train_loader=train_loader,
@@ -139,23 +139,23 @@ sampling_process = 'low_entropy'
 #------ RETRAIN STATION --------------
 #-------------------------------------
 
-# load previously trained model
-train_description = "20ALbase_reAUTO_80E_lr5"
-pretrained_epochs = 20
-trained_model = PretrainedModel(pretrained_model="efficientnet_b1", n_outputs=2)
-trained_model_name = f"{data_name}_efficientNet_b1_{train_description}"
-nr_classes = 2
-model_path = "/home/pedro/Desktop/trained_models_fixed/efficientNet_b1_lr5_NCI/weights/efficientNet_b1_lr5_0.5p_20e_low_entropy.pt"
-trained_model.load_state_dict(torch.load(model_path, map_location=DEVICE))
+## load previously trained model
+#train_description = "20ALbase_reAUTO_80E_lr5"
+#pretrained_epochs = 20
+#trained_model = PretrainedModel(pretrained_model="efficientnet_b1", n_outputs=2)
+#trained_model_name = f"{data_name}_efficientNet_b1_{train_description}"
+#nr_classes = 2
+#model_path = "/home/pedro/Desktop/trained_models_fixed/efficientNet_b1_lr5_NCI/weights/efficientNet_b1_lr5_0.5p_20e_low_entropy.pt"
+#trained_model.load_state_dict(torch.load(model_path, map_location=DEVICE))
 
 
-#val_losses,train_losses,val_metrics,train_metrics = active_train_model(model=trained_model, model_name=trained_model_name, data_name=data_name, train_loader=train_loader, val_loader=val_loader, history_dir=history_dir, weights_dir=weights_dir,
-#                                               entropy_thresh=entropy_thresh, nr_queries=nr_queries, data_classes=data_classes, oversample=True, start_epoch = start_epoch, percentage = percentage,
-#                                                EPOCHS=EPOCHS, DEVICE=DEVICE, LOSS=LOSS)
+##val_losses,train_losses,val_metrics,train_metrics = active_train_model(model=trained_model, model_name=trained_model_name, data_name=data_name, train_loader=train_loader, val_loader=val_loader, history_dir=history_dir, weights_dir=weights_dir,
+##                                               entropy_thresh=entropy_thresh, nr_queries=nr_queries, data_classes=data_classes, oversample=True, start_epoch = start_epoch, percentage = percentage,
+##                                                EPOCHS=EPOCHS, DEVICE=DEVICE, LOSS=LOSS)
 
-val_losses,train_losses,val_metrics,train_metrics = train_model(model=trained_model, model_name=trained_model_name,nr_classes=nr_classes,train_loader=train_loader,
-                  val_loader=val_loader, history_dir=history_dir, weights_dir=weights_dir, data_name=data_name,
-                     LOSS=LOSS, EPOCHS=EPOCHS, DEVICE=DEVICE, percentage=percentage)
+#val_losses,train_losses,val_metrics,train_metrics = train_model(model=trained_model, model_name=trained_model_name,nr_classes=nr_classes,train_loader=train_loader,
+#                  val_loader=val_loader, history_dir=history_dir, weights_dir=weights_dir, data_name=data_name,
+#                     LOSS=LOSS, EPOCHS=EPOCHS, DEVICE=DEVICE, percentage=percentage)
 
 
 plt.figure(figsize=(10,5))
@@ -167,7 +167,7 @@ plt.plot(train_metrics[:,0], label="train-acc",color="red")
 plt.xlabel("Iterations")
 plt.ylabel("Loss/Accuracy")
 plt.legend()
-plt.savefig(os.path.join(trained_models_dir,f"{trained_model_name}_metrics_{percentage}p.png"))
+plt.savefig(os.path.join(trained_models_dir,f"{trained_model_name}_{train_description}_metrics_{percentage}p.png"))
 plt.show()
 
 print("plot saved")
@@ -183,7 +183,7 @@ plt.plot(train_metrics[:,3], label="train-f1",color="blue")
 plt.xlabel("Iterations")
 plt.ylabel("Metrics")
 plt.legend()
-plt.savefig(os.path.join(trained_models_dir,f"{trained_model_name}_metrics2_{percentage}p.png"))
+plt.savefig(os.path.join(trained_models_dir,f"{trained_model_name}_{train_description}_metrics2_{percentage}p.png"))
 plt.show()
 
 print("plot saved")

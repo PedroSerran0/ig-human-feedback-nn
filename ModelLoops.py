@@ -132,7 +132,7 @@ def active_train_model(model, model_name, data_name, train_loader, val_loader, h
             OPTIMISER.step()
             
             # Initialise Active Learning
-            if(epoch >= start_epoch):
+            if(epoch >= start_epoch and epoch < 20):
                 # Copy logits to cpu
 
                 #with torch.no_grad():
@@ -239,6 +239,11 @@ def active_train_model(model, model_name, data_name, train_loader, val_loader, h
         # Train Loss
         train_losses[epoch] = vanilla_avg_train_loss
         
+        # Save it to directory
+        fname = os.path.join(history_dir, f"{model_name}_train_losses_{percentage}_{sampling_process}.npy")
+        np.save(file=fname, arr=val_losses, allow_pickle=True)
+
+        
         # Train Metrics
         # Acc
         train_metrics[epoch, 0] = train_acc
@@ -248,6 +253,9 @@ def active_train_model(model, model_name, data_name, train_loader, val_loader, h
         train_metrics[epoch, 2] = train_precision
         # F1-Score
         train_metrics[epoch, 3] = train_f1
+        
+        fname = os.path.join(history_dir, f"{model_name}_train_metrics_{percentage}_{sampling_process}.npy")
+        np.save(file=fname, arr=val_metrics, allow_pickle=True)
 
         # Update Variables
         # Min Training Loss
