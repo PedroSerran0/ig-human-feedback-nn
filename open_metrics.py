@@ -2,10 +2,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
 
-data_path = "/home/pedro/Desktop/retrained_models/efficientNet_b1_lr5_NCI/history/"
+data_path = "/home/pedro/Desktop/trained_models/efficientNet_b1_ISIC17_lr4/history/"
 
-val_loss_path = f"{data_path}NCI_efficientNet_b1_20ALbase_reAUTO_80E_lr5_val_losses_50.0.npy"
-val_metrics_path = f"{data_path}NCI_efficientNet_b1_20ALbase_reAUTO_80E_lr5_val_metrics.npy"
+val_loss_path = f"{data_path}efficientNet_b1_val_losses_100.npy"
+val_metrics_path = f"{data_path}efficientNet_b1_val_metrics.npy"
 #train_loss_path = f"{data_path}efficientNet_b1_lr5_train_losses_0.5_low_entropy.npy"
 #train_metrics_path = f"{data_path}efficientNet_b1_lr5_train_metrics_0.5_low_entropy.npy"
 
@@ -19,9 +19,9 @@ percentage = "0.5"
 train_description = "20AL_100AUTO_low_1E7"
 
 print("Accuracy: ", np.max(val_metrics[:,0]))
-print("F1-Score: ", np.max(val_metrics[:,1]))
-print("Recall: ", np.max(val_metrics[:,2]))
-print("Precision: ", np.max(val_metrics[:,3]))
+#print("F1-Score: ", np.max(val_metrics[:,1]))
+#print("Recall: ", np.max(val_metrics[:,2]))
+#print("Precision: ", np.max(val_metrics[:,3]))
 print("Min-Loss: ", np.min(val_losses))
 
 #plt.figure(figsize=(10,5))

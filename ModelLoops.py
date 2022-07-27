@@ -142,7 +142,7 @@ def active_train_model(model, model_name, data_name, train_loader, val_loader, h
                 pred_logits = torch.FloatTensor(pred_logits)
                 pred_probs = torch.softmax(pred_logits,1)
                 _,pred = torch.max(pred_probs, 1)
-                print('predictions:', pred_probs.shape, pred)
+                #print('predictions:', pred_probs.shape, pred)
                 
                 if(sampling_process == 'high_entropy'):
                     # Iterate logits tensor 
@@ -150,7 +150,7 @@ def active_train_model(model, model_name, data_name, train_loader, val_loader, h
                         # calculate entropy for each single image logits in batch
                         pred_entropy = entropy(pred_probs[idx])
                         if(pred_entropy > entropy_thresh):
-                            temp_image_info = [images_og[idx], labels[idx], pred_entropy, indices[idx], idx]
+                            temp_image_info = [images_og[idx], labels[idx], pred_entropy, indices[idx], idx, pred[idx]]
                             informative_pred.append(temp_image_info)
                 elif(sampling_process == 'low_entropy'):
                     for idx in range(len(pred_probs)):

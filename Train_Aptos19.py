@@ -49,7 +49,7 @@ data_dir = os.path.join(your_datasets_dir, data_name)
 
 
 #Model Directory
-trained_models_dir = "/home/pedro/Desktop/trained_models"
+trained_models_dir = "/home/pedro/Desktop/ones_test"
 
 # train data
 train_dir = os.path.join(data_dir, "train")
@@ -85,7 +85,31 @@ print(f"Number of Total Train Images: {len(train_set)} | Label Dict: {train_set.
 val_set = Aptos19_Dataset(base_data_path=train_dir, label_file=train_label_file, transform=val_transforms, transform_orig=val_transforms, split='test', fraction = val_fraction)
 print(f"Number of Total Validation Images: {len(val_set)} | Label Dict: {val_set.labels_dict}")
 
+label_0=0
+label_1=0
+label_2=0
+label_3=0
+label_4=0
 
+
+for data_point in train_set:
+    if data_point[2] == 0:
+        label_0+=1
+    if data_point[2] == 1:
+        label_1+=1
+    if data_point[2] == 2:
+        label_2+=1
+    if data_point[2] == 3:
+        label_3+=1
+    if data_point[2] == 4:
+        label_4+=1
+
+print(f"0 ---> {label_0}")
+print(f"1 ---> {label_1}")   
+print(f"2 ---> {label_2}")   
+print(f"3 ---> {label_3}")   
+print(f"4 ---> {label_4}")   
+        
 
 
 # get batch and build loaders
@@ -115,19 +139,19 @@ if not os.path.isdir(history_dir):
 DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
 
 # Hyper-parameters
-EPOCHS = 10
+EPOCHS = 100
 LOSS = torch.nn.CrossEntropyLoss()
 
 # Active Learning parameters
 entropy_thresh = 1
-nr_queries = 5
+nr_queries = 20
 data_classes = ('0', '1', '2', '3', '4')
 start_epoch = 1
 percentage = train_fraction*100
-isOversampled = True
+isOversampled = False
 sampling_process = 'low_entropy'
 
-train_description = "AL_5E_lr4_low"
+train_description = "auto_100_lr5_ones"
 
 val_losses,train_losses,val_metrics,train_metrics = active_train_model(model=model, model_name=model_name, data_name=data_name, train_loader=train_loader, val_loader=val_loader, history_dir=history_dir, weights_dir=weights_dir,
                                                 entropy_thresh=entropy_thresh, nr_queries=nr_queries, data_classes=data_classes, oversample=isOversampled, sampling_process=sampling_process, start_epoch = start_epoch, percentage = percentage,
@@ -163,29 +187,33 @@ val_losses,train_losses,val_metrics,train_metrics = active_train_model(model=mod
 
 
 plt.figure(figsize=(10,5))
-plt.title(f"{train_description} and Validation Metrics ({trained_model_name}_{percentage}%)")
+plt.title(f"{train_description} Accuracy and Loss ({trained_model_name}_{percentage}%)")
 plt.plot(val_losses,label="val-loss", linestyle='--', color="green")
 plt.plot(train_losses,label="train-loss", color="green")
 plt.plot(val_metrics[:,0], label = "val-acc", linestyle='--',color="red")
 plt.plot(train_metrics[:,0], label="train-acc",color="red")
 plt.xlabel("Iterations")
-plt.ylabel("Metrics")
+plt.ylabel("Loss/Accuracy")
 plt.legend()
-plt.savefig(os.path.join(trained_models_dir,f"{trained_model_name}_metrics_{percentage}p.png"))
+plt.savefig(os.path.join(trained_models_dir,f"{trained_model_name}_{train_description}_metrics_{percentage}p.png"))
 plt.show()
 
 print("plot saved")
 
-# plt.figure(figsize=(10,5))
-# plt.title(f"Training and Validation Accuracy ({trained_model_name}_AL)")
-# plt.plot(val_metrics[:,0], label = "val-acc")
-# plt.plot(train_metrics[:,0], label="train-acc")
-# plt.xlabel("Iterations")
-# plt.ylabel("Accuracy")
-# plt.legend()
-# plt.savefig(os.path.join(trained_models_dir,f"{trained_model_name}_acc_{EPOCHS}E_AL.png"))
-# plt.show()
+plt.figure(figsize=(10,5))
+plt.title(f"{train_description} Recall, Precision,F1 ({trained_model_name}_{percentage}%)")
+plt.plot(val_metrics[:,1],label="val-recall", linestyle='--', color="green")
+plt.plot(train_metrics[:,1],label="train-recall", color="green")
+plt.plot(val_metrics[:,2], label = "val-precision", linestyle='--',color="red")
+plt.plot(train_metrics[:,2], label="train-precision",color="red")
+plt.plot(val_metrics[:,3], label = "val-f1", linestyle='--',color="blue")
+plt.plot(train_metrics[:,3], label="train-f1",color="blue")
+plt.xlabel("Iterations")
+plt.ylabel("Metrics")
+plt.legend()
+plt.savefig(os.path.join(trained_models_dir,f"{trained_model_name}_{train_description}_metrics2_{percentage}p.png"))
+plt.show()
 
-# print("accuracy plot saved")
+print("plot saved")
 
 
