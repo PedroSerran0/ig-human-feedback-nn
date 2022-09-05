@@ -1,25 +1,16 @@
 # Imports
-import numpy as np
 import os
-from PIL import Image
+import numpy as np
+import matplotlib.pyplot as plt
 
 # PyTorch Imports
 import torch
-from torch.utils.data import Dataset
-from torch.utils.data import DataLoader
 import torchvision
-import torchvision.transforms as transforms
-import matplotlib.pyplot as plt
-from matplotlib.colors import LinearSegmentedColormap
-import torch.nn as nn
-import torch.nn.functional as F
-import torch.optim as optim
 
-# My Imports
-from ModelLoops import train_model
-from ModelLoops import active_train_model
-from CustomDatasets import ISIC17_Dataset
-from ModelArchitectures import PretrainedModel
+# Project Imports
+from data_utilities import ISIC17_Dataset
+from model_architectures import PretrainedModel
+from model_loops import train_model, active_train_model
 
 
 # CUDA
@@ -27,23 +18,24 @@ GPU_TO_USE="0"
 device = f"cuda:{GPU_TO_USE}" if torch.cuda.is_available() else "cpu"
 print("DEVICE:", device)
 
+
 # Data Directories
-your_datasets_dir = "/home/pedro/Desktop"
+your_datasets_dir = "data"
 data_dir = os.path.join(your_datasets_dir, "ISIC17")
 data_name = "ISIC17"
 
-#Model Directory
-trained_models_dir = "/home/pedro/Desktop/trained_models"
+# Model Directory
+trained_models_dir = "results/trained_models"
 
-# train data
+# Train data
 train_dir = os.path.join(data_dir, "train")
 train_label_file = "ISIC-2017_Training_Part3_GroundTruth.csv"
 
-# validation data
+# Validation data
 val_dir = os.path.join(data_dir, "val")
 val_label_file = "ISIC-2017_Validation_Part3_GroundTruth.csv"
 
-# train transforms
+# Train transforms
 MEAN = [0.485, 0.456, 0.406]
 STD = [0.229, 0.224, 0.225]
 
@@ -131,9 +123,18 @@ train_description = "AUTO_100E"
 #                                                 EPOCHS=EPOCHS, DEVICE=DEVICE, LOSS=LOSS)
 
 
-val_losses,train_losses,val_metrics,train_metrics = train_model(model=model, model_name=model_name,nr_classes=nr_classes,train_loader=train_loader,
-                  val_loader=val_loader, history_dir=history_dir, weights_dir=weights_dir, data_name=data_name,
-                     LOSS=LOSS, EPOCHS=EPOCHS, DEVICE=DEVICE, percentage=percentage)
+val_losses,train_losses,val_metrics,train_metrics = train_model(
+    model=model,
+    model_name=model_name,
+    train_loader=train_loader,
+    val_loader=val_loader,
+    history_dir=history_dir,
+    weights_dir=weights_dir,
+    LOSS=LOSS,
+    EPOCHS=EPOCHS,
+    DEVICE=DEVICE,
+    percentage=percentage
+)
 
 #plt.figure(figsize=(10,5))
 #plt.title(f"Training and Validation Metrics ({trained_model_name}_{EPOCHS}E_AL_{percentage}%)")
@@ -185,9 +186,3 @@ plt.savefig(os.path.join(trained_models_dir,f"{trained_model_name}_metrics_{perc
 plt.show()
 
 print("plot saved")
-
-
-
-
-
-

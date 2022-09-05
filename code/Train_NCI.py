@@ -1,35 +1,18 @@
 # Imports
-from selectors import EpollSelector
-import numpy as np
 import os
-from PIL import Image
+import numpy as np
 from PIL import ImageFile
-ImageFile.LOAD_TRUNCATED_IMAGES = True
-import sklearn
-from sklearn import model_selection
+import matplotlib.pyplot as plt
 
 # PyTorch Imports
 import torch
-from torch.utils.data import Dataset
-from torch.utils.data import DataLoader
 import torchvision
-import torchvision.transforms as transforms
-import matplotlib.pyplot as plt
-from matplotlib.colors import LinearSegmentedColormap
-import torch.nn as nn
-import torch.nn.functional as F
-import torch.optim as optim
 
-# My Imports
-from ModelLoops import train_model
-from ModelLoops import active_train_model
-from CustomDatasets import NCI_Dataset
-from ModelArchitectures import PretrainedModel
+# Project Imports
+from data_utilities import NCI_Dataset
+from model_architectures import PretrainedModel
+from model_loops import train_model, active_train_model
 
-# CUDA
-GPU_TO_USE="0"
-device = f"cuda:{GPU_TO_USE}" if torch.cuda.is_available() else "cpu"
-print("DEVICE:", device)
 
 # Fix Random Seeds
 random_seed = 42
@@ -37,14 +20,25 @@ torch.manual_seed(random_seed)
 np.random.seed(random_seed)
 
 
+# Global settings
+ImageFile.LOAD_TRUNCATED_IMAGES = True
+
+# CUDA
+GPU_TO_USE="0"
+device = f"cuda:{GPU_TO_USE}" if torch.cuda.is_available() else "cpu"
+print("DEVICE:", device)
+
+
+
+
 # Data Directories
-your_datasets_dir = "/home/pedro/Desktop"
+your_datasets_dir = "data"
 data_name = "NCI"
 data_dir = os.path.join(your_datasets_dir, "NHS")
 
 
 #Model Directory
-trained_models_dir = "/home/pedro/Desktop/new_AL_models"
+trained_models_dir = "results/new_AL_models"
 
 # train data
 #train_dir = os.path.join(data_dir, "train")
@@ -125,9 +119,24 @@ sampling_process = 'low_entropy'
 train_description = "20_AL_80AUTO_lr5_over_low_1e7_REDO"
 #train_description = "100E_AUTO_lr5_REDO"
 
-val_losses,train_losses,val_metrics,train_metrics = active_train_model(model=model, model_name=model_name, data_name=data_name, train_loader=train_loader, val_loader=val_loader, history_dir=history_dir, weights_dir=weights_dir,
-                                                entropy_thresh=entropy_thresh, nr_queries=nr_queries, data_classes=data_classes, oversample=isOversampled, sampling_process=sampling_process, start_epoch = start_epoch, percentage = percentage,
-                                                 EPOCHS=EPOCHS, DEVICE=DEVICE, LOSS=LOSS)
+val_losses, train_losses, val_metrics, train_metrics = active_train_model(
+    model=model,
+    model_name=model_name,
+    train_loader=train_loader,
+    val_loader=val_loader,
+    history_dir=history_dir,
+    weights_dir=weights_dir,
+    entropy_thresh=entropy_thresh,
+    nr_queries=nr_queries,
+    data_classes=data_classes,
+    oversample=isOversampled,
+    sampling_process=sampling_process,
+    start_epoch=start_epoch,
+    percentage=percentage,
+    EPOCHS=EPOCHS,
+    DEVICE=DEVICE,
+    LOSS=LOSS
+)
 
 
 #val_losses,train_losses,val_metrics,train_metrics = train_model(model=model, model_name=model_name,nr_classes=2,train_loader=train_loader,

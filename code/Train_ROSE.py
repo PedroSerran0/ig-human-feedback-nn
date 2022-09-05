@@ -1,35 +1,17 @@
 # Imports
-from re import L
-from selectors import EpollSelector
-import numpy as np
 import os
-from PIL import Image
+import numpy as np
 import sklearn
-from sklearn import model_selection
 
 # PyTorch Imports
 import torch
-from torch.utils.data import Dataset
-from torch.utils.data import DataLoader
 import torchvision
-import torchvision.transforms as transforms
-import matplotlib.pyplot as plt
-from matplotlib.colors import LinearSegmentedColormap
-import torch.nn as nn
-import torch.nn.functional as F
-import torch.optim as optim
 
-# My Imports
-from ModelLoops import train_model
-from ModelLoops import test_model
-from ModelLoops import active_train_model
-from CustomDatasets import ROSE_Dataset
-from ModelArchitectures import PretrainedModel
+# Project Imports
+from data_utilities import ROSE_Dataset
+from model_loops import active_train_model
+from model_architectures import PretrainedModel
 
-# CUDA
-GPU_TO_USE="0"
-device = f"cuda:{GPU_TO_USE}" if torch.cuda.is_available() else "cpu"
-print("DEVICE:", device)
 
 # Fix Random Seeds
 random_seed = 42
@@ -37,14 +19,21 @@ torch.manual_seed(random_seed)
 np.random.seed(random_seed)
 
 
+# CUDA
+GPU_TO_USE="0"
+device = f"cuda:{GPU_TO_USE}" if torch.cuda.is_available() else "cpu"
+print("DEVICE:", device)
+
+
+
 # Data Directories
-your_datasets_dir = "/home/pedro/Desktop"
+your_datasets_dir = "data"
 data_name = "ROSE"
 attack_type = None
 data_dir = os.path.join(your_datasets_dir, data_name)
 data_dir = os.path.join(data_dir, "data_divided")
 
-#Model Directory
+#M odel Directory
 trained_models_dir = "/home/pedro/Desktop/trained_AL_models"
 
 MEAN = [0.485, 0.456, 0.406]
@@ -59,7 +48,7 @@ train_transforms = torchvision.transforms.Compose([
     torchvision.transforms.Normalize(MEAN, STD)
 ])
 
-#validation transforms
+# validation transforms
 val_transforms = torchvision.transforms.Compose([
     torchvision.transforms.Resize((224, 224)),
     torchvision.transforms.ToTensor(),
@@ -137,9 +126,21 @@ nr_queries = 2
 data_classes = ('0', '1')
 start_epoch = 1
 
-val_losses,train_losses,val_metrics,train_metrics = active_train_model(model=model, model_name=model_name, data_name=data_name, train_loader=train_loader, val_loader=val_loader, history_dir=history_dir, weights_dir=weights_dir,
-                                                entropy_thresh=entropy_thresh, nr_queries=nr_queries, data_classes=data_classes, start_epoch = start_epoch, percentage = 1,
-                                                 EPOCHS=EPOCHS, DEVICE=DEVICE, LOSS=LOSS)
+val_losses, train_losses, val_metrics, train_metrics = active_train_model(
+    model=model,
+    model_name=model_name,
+    train_loader=train_loader,
+    val_loader=val_loader,
+    history_dir=history_dir,
+    weights_dir=weights_dir,
+    entropy_thresh=entropy_thresh,
+    nr_queries=nr_queries,
+    data_classes=data_classes,
+    start_epoch=start_epoch,
+    percentage=1,
+    EPOCHS=EPOCHS,
+    DEVICE=DEVICE,LOSS=LOSS
+)
 
 
 # val_losses,train_losses,val_metrics,train_metrics = train_model(model=model, model_name=model_name,nr_classes=2,train_loader=train_loader,

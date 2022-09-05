@@ -1,34 +1,23 @@
 # Imports
-import numpy as np
 import os
-from PIL import Image
+import numpy as np
 
 # PyTorch Imports
 import torch
-from torch.utils.data import Dataset
-from torch.utils.data import DataLoader
 import torchvision
-import torchvision.transforms as transforms
-import matplotlib.pyplot as plt
-from matplotlib.colors import LinearSegmentedColormap
-import torch.nn as nn
-import torch.nn.functional as F
-import torch.optim as optim
 
-# My Imports
-from ModelLoops import train_model
-from ModelLoops import active_train_model
-from CustomDatasets import ISIC17_Dataset
-from ModelArchitectures import PretrainedModel
+# Project Imports
+from data_utilities import ISIC17_Dataset
+from model_architectures import PretrainedModel
+from xai_utilities import GenerateDeepLiftAtts
+from ui_utilities import GetOracleFeedback
 
-# My Imports
-from CustomDatasets import Aptos19_Dataset
-from ModelArchitectures import PretrainedModel
-from xAI_utils import GenerateDeepLift
-from xAI_utils import GenerateDeepLiftAtts
-from choose_rects import GenerateRectangles
-from choose_rects import ChooseRectangles
-from choose_rects import GetOracleFeedback
+
+# Fix Random Seeds
+random_seed = 42
+torch.manual_seed(random_seed)
+np.random.seed(random_seed)
+
 
 
 # CUDA
@@ -36,23 +25,25 @@ GPU_TO_USE="0"
 device = f"cuda:{GPU_TO_USE}" if torch.cuda.is_available() else "cpu"
 print("DEVICE:", device)
 
+
 # Data Directories
-your_datasets_dir = "/home/pedro/Desktop"
+your_datasets_dir = "data"
 data_dir = os.path.join(your_datasets_dir, "ISIC17")
 data_name = "ISIC17"
 
-#Model Directory
+# Model Directory
 trained_models_dir = "/home/pedro/Desktop/retrained_models"
 
-# train data
+# Train data
 train_dir = os.path.join(data_dir, "train")
 train_label_file = "ISIC-2017_Training_Part3_GroundTruth.csv"
 
-# validation data
+# Validation data
 val_dir = os.path.join(data_dir, "val")
 val_label_file = "ISIC-2017_Validation_Part3_GroundTruth.csv"
 
-# train transforms
+
+# Train transforms
 MEAN = [0.485, 0.456, 0.406]
 STD = [0.229, 0.224, 0.225]
 
@@ -66,7 +57,8 @@ train_transforms = torchvision.transforms.Compose([
     torchvision.transforms.Normalize(MEAN, STD)
 ])
 
-# validation transforms
+
+# Validation transforms
 val_transforms = torchvision.transforms.Compose([
     torchvision.transforms.Resize((224, 224)),
     torchvision.transforms.ToTensor(),
@@ -91,11 +83,6 @@ BATCH_SIZE = 10
 
 train_loader = torch.utils.data.DataLoader(dataset=train_set, batch_size=BATCH_SIZE, shuffle=True, num_workers=4)
 val_loader = torch.utils.data.DataLoader(dataset=val_set, batch_size=BATCH_SIZE, shuffle=True, num_workers=4)
-
-# Fix Random Seeds
-random_seed = 42
-torch.manual_seed(random_seed)
-np.random.seed(random_seed)
 
 nr_classes = 2
 model = PretrainedModel(pretrained_model="efficientnet_b1", n_outputs=2)
@@ -141,7 +128,3 @@ for i in range(10):
     print(deepLiftAtts.shape)
 
     x, y = GetOracleFeedback(image=images_og[i], label=labels[i], idx=indices[i], model_attributions=deepLiftAtts, pred=query_pred, rectSize=28, rectStride=28, nr_rects=10)
-
-
-
-

@@ -1,38 +1,16 @@
-from ctypes import sizeof
-from sklearn.metrics import accuracy_score
-import torch
+# Imports
 import os
-import torchvision 
-import torch.nn.functional as F
 import numpy as np
-import sklearn
-from sklearn import model_selection
-from PIL import Image
-import matplotlib.pyplot as plt
-from matplotlib.colors import LinearSegmentedColormap
-import torchvision
-import torchvision.transforms as transforms
-import torchvision.models as models
-import skimage
 
-# Captum Imports
-from captum.attr import IntegratedGradients
-from captum.attr import Saliency
-from captum.attr import DeepLift
-from captum.attr import NoiseTunnel
-from captum.attr import GradientShap
-from captum.attr import Occlusion
-from captum.attr import LRP
-from captum.attr import visualization as viz
+# PyTorch Imports
+import torch
+import torchvision 
 
-# My Imports
-from CustomDatasets import Aptos19_Dataset
-from ModelArchitectures import PretrainedModel
-from xAI_utils import GenerateDeepLift
-from xAI_utils import GenerateDeepLiftAtts
-from choose_rects import GenerateRectangles
-from choose_rects import ChooseRectangles
-from choose_rects import GetOracleFeedback
+# Project Imports
+from data_utilities import Aptos19_Dataset
+from model_architectures import PretrainedModel
+from xai_utilities import GenerateDeepLiftAtts
+from ui_utilities import GetOracleFeedback
 
 # CUDA
 GPU_TO_USE="0"
@@ -46,13 +24,13 @@ np.random.seed(random_seed)
 
 
 # Data Directories
-your_datasets_dir = "/home/pedro/Desktop"
+your_datasets_dir = "data"
 data_name = "Aptos2019"
 data_dir = os.path.join(your_datasets_dir, data_name)
 
 
 #Model Directory
-trained_models_dir = "/home/pedro/Desktop/trained_models"
+trained_models_dir = "results/trained_models"
 
 # train data
 train_dir = os.path.join(data_dir, "train")

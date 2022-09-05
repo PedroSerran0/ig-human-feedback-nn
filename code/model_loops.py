@@ -1,44 +1,42 @@
-import numpy as np
+# Imports
 import os
-from PIL import Image 
+import numpy as np
 from PIL import ImageFile
-ImageFile.LOAD_TRUNCATED_IMAGES = True
 from tqdm import tqdm
+
+# Sklearn and SciPy Imports
+from sklearn.metrics import accuracy_score, recall_score, precision_score, f1_score
+from scipy.stats import entropy
 
 # PyTorch Imports
 import torch
-from torch.utils.data import Dataset
-from torch.utils.data import DataLoader
-import torchvision
 import torchvision.transforms as transforms
-import matplotlib.pyplot as plt
-from matplotlib.colors import LinearSegmentedColormap
-import pandas as pd
-import torch.nn as nn
-import torch.nn.functional as F
-import torch.optim as optim
 
-# My imports
-from sklearn.metrics import accuracy_score
-from sklearn.metrics import recall_score
-from sklearn.metrics import precision_score
-from sklearn.metrics import f1_score
-from scipy.stats import entropy
-from xAI_utils import takeThird
-from xAI_utils import GenerateDeepLiftAtts
-from choose_rects import GetOracleFeedback
+# Project Imports
+from xai_utilities import takeThird, GenerateDeepLiftAtts
+from ui_utilities import GetOracleFeedback
 
+
+
+# Global variables and definitions
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 HITL_LAMBDA = 1e7
 
+
+
+# Function: Custom loss function
 def my_loss(Ypred, X, W):
     # it "works" with both retain_graph=True and create_graph=True, but I think
     # the latter is what we want
     grad = torch.autograd.grad(Ypred.sum(), X, retain_graph=True)[0]
     # grad has a shape: torch.Size([256, 3, 32, 32])
+    
     return (W *(grad**2).mean(1)).mean()
 
+
+
 # Train model and sample the most useful images for decision making (entropy based sampling)
-def active_train_model(model, model_name, data_name, train_loader, val_loader, history_dir, weights_dir, entropy_thresh, nr_queries, start_epoch, data_classes, oversample, sampling_process, EPOCHS, DEVICE, LOSS, percentage=100):
+def active_train_model(model, model_name, train_loader, val_loader, history_dir, weights_dir, entropy_thresh, nr_queries, start_epoch, data_classes, oversample, sampling_process, EPOCHS, DEVICE, LOSS, percentage=100):
     
     assert sampling_process in ['low_entropy', 'high_entropy']
     # Hyper-parameters
@@ -376,8 +374,10 @@ def active_train_model(model, model_name, data_name, train_loader, val_loader, h
     print("Finished.")
     return val_losses,train_losses,val_metrics,train_metrics
 
-# Train model and iterate through the validation set, saving the best model
-def train_model(model, model_name, train_loader, val_loader, history_dir, weights_dir, nr_classes, data_name ,EPOCHS, DEVICE, LOSS, percentage = 100):
+
+
+# Function:  Train model and iterate through the validation set, saving the best model
+def train_model(model, model_name, train_loader, val_loader, history_dir, weights_dir, EPOCHS, DEVICE, LOSS, percentage = 100):
     
     # Mean and STD to Normalize the inputs into pretrained models
     MEAN = [0.485, 0.456, 0.406]
@@ -611,7 +611,9 @@ def train_model(model, model_name, train_loader, val_loader, history_dir, weight
     return val_losses,train_losses,val_metrics,train_metrics
     
 
-def test_model(model, model_name, test_loader, nr_classes, LOSS, DEVICE):
+
+# Function: Test model
+def test_model(model, test_loader, LOSS, DEVICE):
     # Test Loop
     print("Test Phase")
 
@@ -657,7 +659,6 @@ def test_model(model, model_name, test_loader, nr_classes, LOSS, DEVICE):
             s_logits = torch.argmax(s_logits, dim=1)
             y_test_pred += list(s_logits.cpu().detach().numpy())
 
-        
 
         # Compute Average Train Loss
         avg_test_loss = run_test_loss/len(test_loader.dataset)
@@ -691,6 +692,3 @@ def test_model(model, model_name, test_loader, nr_classes, LOSS, DEVICE):
 
     print("Finished")
     return test_loss, test_metrics
-
-
-

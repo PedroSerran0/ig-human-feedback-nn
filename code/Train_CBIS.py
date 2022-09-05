@@ -1,45 +1,43 @@
 # Imports
-import numpy as np
 import os
-from PIL import Image
-from sklearn.metrics import accuracy_score
+import numpy as np
+import matplotlib.pyplot as plt
 
 # PyTorch Imports
 import torch
-from torch.utils.data import Dataset
-from torch.utils.data import DataLoader
 import torchvision
-import torchvision.transforms as transforms
-import matplotlib.pyplot as plt
-from matplotlib.colors import LinearSegmentedColormap
-import torch.nn as nn
-import torch.nn.functional as F
-import torch.optim as optim
 
-# My Imports
-from ModelArchitectures import ResNet50
-from CustomDatasets import CBISDataset
-from ModelLoops import train_model
+# Project Imports
+from data_utilities import CBISDataset
+from model_architectures import resnet50
+from model_loops import train_model
+
+
 
 # CUDA
 GPU_TO_USE="0"
 device = f"cuda:{GPU_TO_USE}" if torch.cuda.is_available() else "cpu"
 print("DEVICE:", device)
 
+
+
 # Data Directories
-your_datasets_dir = "/home/up201605633/Desktop"
+your_datasets_dir = "data"
 data_dir = os.path.join(your_datasets_dir, "CBISPreprocDataset")
 train_dir = os.path.join(data_dir, "train")
 val_dir = os.path.join(data_dir, "val")
 test_dir = os.path.join(data_dir, "test")
 
-# Model Directory
-trained_models_dir = "/home/up201605633/Desktop/trained_models"
 
-# train transforms
+# Model Directory
+trained_models_dir = "results/trained_models"
+
+
+# Data normalisations parameters
 MEAN = [0.485, 0.456, 0.406]
 STD = [0.229, 0.224, 0.225]
 
+# Train transforms
 train_transforms = torchvision.transforms.Compose([
     torchvision.transforms.Resize((224, 224)),
     torchvision.transforms.RandomAffine(degrees=(-10, 10), translate=(0.05, 0.1), scale=(0.95, 1.05), shear=0, resample=0, fillcolor=(0, 0, 0)),
@@ -48,12 +46,14 @@ train_transforms = torchvision.transforms.Compose([
     torchvision.transforms.Normalize(MEAN, STD)
 ])
 
-# validation transforms
+
+# Validation transforms
 val_transforms = torchvision.transforms.Compose([
     torchvision.transforms.Resize((224, 224)),
     torchvision.transforms.ToTensor(),
     torchvision.transforms.Normalize(MEAN, STD)
 ])
+
 
 # Load and count data samples
 # Train Dataset
@@ -106,7 +106,7 @@ img_width = 224
 
 # ResNet50
 nr_classes = 2
-model = ResNet50(pretrained_model="resnet50", n_outputs=2)
+model = resnet50(pretrained_model="resnet50", n_outputs=2)
 model_name = "resNet50"
 
 # Hyper-parameters
@@ -114,9 +114,17 @@ EPOCHS = 50
 LOSS = torch.nn.CrossEntropyLoss()
 LEARNING_RATE = 1e-4
 
-val_losses,train_losses,val_metrics,train_metrics = train_model(model=model, model_name=model_name,nr_classes=2,train_loader=train_loader,
-                 val_loader=val_loader, history_dir=history_dir, weights_dir=weights_dir,
-                    LOSS=LOSS, EPOCHS=EPOCHS, DEVICE=DEVICE)
+val_losses, train_losses, val_metrics, train_metrics = train_model(
+    model=model,
+    model_name=model_name,
+    train_loader=train_loader,
+    val_loader=val_loader,
+    history_dir=history_dir,
+    weights_dir=weights_dir,
+    LOSS=LOSS,
+    EPOCHS=EPOCHS,
+    DEVICE=DEVICE
+)
 
 
 plt.figure(figsize=(10,5))
@@ -139,4 +147,3 @@ plt.ylabel("Accuracy")
 plt.legend()
 plt.savefig(os.path.join(trained_models_dir,"CBIS_resnet50_acc.png"))
 plt.show()
-
