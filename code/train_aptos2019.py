@@ -2,6 +2,7 @@
 import os
 import numpy as np
 import matplotlib.pyplot as plt
+import argparse
 
 # PyTorch Imports
 import torch
@@ -12,31 +13,50 @@ from data_utilities import Aptos19_Dataset
 from model_architectures import PretrainedModel
 from model_loops import train_model, active_train_model
 
+parser = argparse.ArgumentParser(description='Run HITL training')
 
+# Directories
+parser.add_argument('-dr', '--data_dir', type=str, metavar='', required=True, help='Train Data Directory')
+parser.add_argument('-md', '--models_dir', type=str, metavar='', required=True, help='Trained Models Directory')
+
+# Training Hyperparameters
+parser.add_argument('-E', '--epochs', type=int, metavar='', required=True, help='Training Epochs')
+parser.add_argument('-tf', '--tr_fraction', type=float, metavar='', required=True, help='Fraction of train data')
+parser.add_argument('-vf', '--val_fraction', type=float, metavar='', required=True, help='Fraction of val data')
+parser.add_argument('-td', '--train_desc', type=float, metavar='', required=True, help='Train title')
+
+# HITL Options
+parser.add_argument('-sp', '--sampling', type=str, choices=['low_entropy', 'high_entropy'], metavar='', required=True, help='Sampling Process (low_entropy or high_entropy)')
+parser.add_argument('-et', '--entropy_thresh', type=float, metavar='', required=True, help='Entropy Threshold')
+parser.add_argument('-qu', '--nr_queries', type=int, metavar='', required=True, help='Number of Queries per epoch')
+parser.add_argument('-ov', '--isOversampled', type=bool, metavar='', required=True, help='Activate/Deactivate oversampling')
+parser.add_argument('-se', '--start_epoch', type=int, metavar='', required=True, help='HITL activation epoch')
+
+# Dataset
+parser.add_argument('-ds', '--dataset', type=str, choices=['APTOS', 'ISIC','NCI'], metavar='', required=True, help='Define the dataset (APTOS, ISIC,NCI)')
+
+args = parser.parse_args()
 
 # Fix Random Seeds
 random_seed = 42
 torch.manual_seed(random_seed)
 np.random.seed(random_seed)
 
-
-
 # CUDA
 GPU_TO_USE="0"
 device = f"cuda:{GPU_TO_USE}" if torch.cuda.is_available() else "cpu"
 print("DEVICE:", device)
 
-
-
 # Data Directories
-your_datasets_dir = "data"
+#your_datasets_dir = "data"
+your_datasets_dir = args.data_dir
 data_name = "Aptos2019"
 data_dir = os.path.join(your_datasets_dir, data_name)
 
 
 # Model Directory
-trained_models_dir = "results/ones_test"
-
+#trained_models_dir = "results/ones_test"
+trained_models_dir = args.models_dir
 
 # Train data
 train_dir = os.path.join(data_dir, "train")
@@ -67,41 +87,14 @@ val_transforms = torchvision.transforms.Compose([
 
 
 # Load and count data samples
-train_fraction = 0.1
-val_fraction = 1
+train_fraction = args.tr_fraction
+val_fraction = args.val_fraction
 
 # Train Dataset
 train_set = Aptos19_Dataset(base_data_path=train_dir, label_file=train_label_file, transform=train_transforms, transform_orig=val_transforms, split='train', fraction = train_fraction)
 print(f"Number of Total Train Images: {len(train_set)} | Label Dict: {train_set.labels_dict}")
 val_set = Aptos19_Dataset(base_data_path=train_dir, label_file=train_label_file, transform=val_transforms, transform_orig=val_transforms, split='test', fraction = val_fraction)
 print(f"Number of Total Validation Images: {len(val_set)} | Label Dict: {val_set.labels_dict}")
-
-label_0=0
-label_1=0
-label_2=0
-label_3=0
-label_4=0
-
-
-for data_point in train_set:
-    if data_point[2] == 0:
-        label_0+=1
-    if data_point[2] == 1:
-        label_1+=1
-    if data_point[2] == 2:
-        label_2+=1
-    if data_point[2] == 3:
-        label_3+=1
-    if data_point[2] == 4:
-        label_4+=1
-
-print(f"0 ---> {label_0}")
-print(f"1 ---> {label_1}")   
-print(f"2 ---> {label_2}")   
-print(f"3 ---> {label_3}")   
-print(f"4 ---> {label_4}")   
-        
-
 
 # get batch and build loaders
 BATCH_SIZE = 4
@@ -130,17 +123,17 @@ if not os.path.isdir(history_dir):
 DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
 
 # Hyper-parameters
-EPOCHS = 100
+EPOCHS = args.epochs
 LOSS = torch.nn.CrossEntropyLoss()
 
 # Active Learning parameters
-entropy_thresh = 1
-nr_queries = 20
+entropy_thresh = args.entropy_thresh
+nr_queries = args.nr_queries
 data_classes = ('0', '1', '2', '3', '4')
-start_epoch = 1
+start_epoch = args.start_epoch
 percentage = train_fraction*100
-isOversampled = False
-sampling_process = 'low_entropy'
+isOversampled = args.isOversampled
+sampling_process = args.sampling
 
 train_description = "auto_100_lr5_ones"
 
