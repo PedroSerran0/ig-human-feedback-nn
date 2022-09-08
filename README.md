@@ -35,6 +35,6 @@ To run the HITL training you must run the train.py file and enter the training p
 
 An example command could be:
 
-python train.py -dr '/home/Desktop/aptos2019data' -md 'results/ones_test' -E 10 -tf 0.1 -vf 1 -td 'example_train_10epochs' -sp 'low_entropy' -et 0.1 -qu 10 -ov True -se 5 -ds 'APTOS'
+python train.py -dr '/home/Desktop/aptos2019data' -md 'results/ones_test' -E 10 -tf 0.1 -vf 1 -td 'example_train_10epochs' -sp 'low_entropy' -et 0.1 -qu 10 -ov True -se 5 -ds 'APTOS19'
 
 The code will save the best model and the training history and metrics. It will also generate two graphs that describe the evaluation metrics progression.
