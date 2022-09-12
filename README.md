@@ -8,7 +8,7 @@ When a model makes a wrong prediction, a typical solution is to acquire more dat
 
 ## Usage
 To run the HITL training you must run the train.py file and enter the training parameters. The parsing structure is as follows:
-
+```
 -dr -> data directory (str)
 
 -md -> trained models directory (str)
@@ -32,9 +32,11 @@ To run the HITL training you must run the train.py file and enter the training p
 -se -> the epoch on which the querying starts (int)
 
 -ds -> the dataset to train on (APTOS19 / ISIC17 / NCI) (string)
+```
 
 An example command could be:
-
-python train.py -dr '/home/Desktop/aptos2019data' -md 'results/ones_test' -E 10 -tf 0.1 -vf 1 -td 'example_train_10epochs' -sp 'low_entropy' -et 0.1 -qu 10 -ov True -se 5 -ds 'APTOS19'
+```bash
+$ python train.py -dr '/home/Desktop/aptos2019data' -md 'results/ones_test' -E 10 -tf 0.1 -vf 1 -td 'example_train_10epochs' -sp 'low_entropy' -et 0.1 -qu 10 -ov True -se 5 -ds 'APTOS19'
+```
 
 The code will save the best model and the training history and metrics. It will also generate two graphs that describe the evaluation metrics progression.
